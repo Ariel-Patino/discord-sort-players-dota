@@ -1,0 +1,8 @@
+{
+  "sort": {
+    "errors": {
+      "errorVoiceChannel": "Please connect to server, General voice channel!",
+      "errorMinPlayers": "R U a f* loser?, call someone else to play with!"
+    }
+  }
+}
