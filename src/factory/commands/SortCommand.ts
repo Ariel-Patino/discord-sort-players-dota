@@ -3,9 +3,6 @@ import Command from './Command';
 import * as l from '@root/textSource.json';
 import { players } from '@root/src/store/players';
 
-const unknowPlayer = 'Unknown';
-let unknowPlayerCounter = 0;
-
 export default class SortCommand extends Command {
   constructor(command: string, chatChannel: any) {
     super(command, chatChannel);
@@ -52,8 +49,7 @@ export default class SortCommand extends Command {
         .map((member: any) => {
           const user = players[member?.user?.username as string];
           if (!user) {
-            unknowPlayerCounter++;
-            return `${unknowPlayer} ${unknowPlayerCounter}`;
+            return member.user.username;
           }
           return user.dotaName;
         })
@@ -64,8 +60,7 @@ export default class SortCommand extends Command {
         .map((member: any) => {
           const user = players[member?.user?.username as string];
           if (!user) {
-            unknowPlayerCounter++;
-            return `${unknowPlayer} ${unknowPlayerCounter}`;
+            return member.user.username;
           }
           return user.dotaName;
         })
