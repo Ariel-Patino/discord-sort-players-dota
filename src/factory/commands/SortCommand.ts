@@ -1,7 +1,7 @@
 import 'module-alias/register';
 import Command from './Command';
-import * as l from '@root/textSource.json';
 import { players } from '@root/src/store/players';
+import retieveChatMembers from '@root/src/helpers/sort/retieveChatMembers';
 
 export default class SortCommand extends Command {
   constructor(command: string, chatChannel: any) {
@@ -9,34 +9,15 @@ export default class SortCommand extends Command {
   }
 
   execute(): void {
-    if (this.isUserOnVoiceChannel()) {
-      this.chatChannel.reply(l.sort.errors.errorVoiceChannel);
+    const members = retieveChatMembers(this.chatChannel);
+    if (!members) {
       return;
     }
-
-    const voiceChannel = this.chatChannel.member.voice.channel;
-    const members = voiceChannel.members;
-
-    if (this.isThereLessThanTwoPlayers(members)) {
-      this.chatChannel.reply(l.sort.errors.errorMinPlayers);
-      return;
-    }
-
-    this.sortPlayers(members);
+    this.sentTeamsPlayers(members);
   }
 
-  isUserOnVoiceChannel = (): boolean => {
-    return !this.chatChannel.member?.voice.channel;
-  };
-
-  isThereLessThanTwoPlayers = (members: any): boolean => {
-    return members.size < 2;
-  };
-
-  sortPlayers(members: any) {
-    const shuffledMembers = Array.from(members.values()).sort(
-      () => Math.random() - 0.5
-    );
+  sentTeamsPlayers(members: any) {
+    const shuffledMembers = this.suffleTeamMembers(members);
 
     const team1 = shuffledMembers.slice(
       0,
@@ -67,4 +48,8 @@ export default class SortCommand extends Command {
         .join(', ')}`
     );
   }
+
+  suffleTeamMembers = (members: any) => {
+    return Array.from(members.values()).sort(() => Math.random() - 0.5);
+  };
 }
