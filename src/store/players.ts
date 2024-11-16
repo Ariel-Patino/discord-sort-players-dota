@@ -123,6 +123,13 @@ export const players: Players = {
     carry: true,
     tanque: false,
   },
+  m4700839: {
+    dotaName: 'Mato',
+    rank: 4,
+    support: true,
+    carry: true,
+    tanque: true,
+  },
   mato4130: {
     dotaName: 'Mato',
     rank: 4,
