@@ -6,7 +6,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "prepare": "husky",
-    "start": "ts-node-dev --respawn --transpile-only src/index.ts"
+    "start": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "test": "echo \"No test specified\" && exit 0"
   },
   "keywords": [],
   "author": "Vulture255",
