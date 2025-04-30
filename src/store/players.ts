@@ -27,7 +27,7 @@ export const players: Players = {
   },
   alvaroavilaperez: {
     dotaName: 'Capcom',
-    rank: 3,
+    rank: 2,
     support: false,
     carry: true,
     tanque: true,
@@ -69,7 +69,7 @@ export const players: Players = {
   },
   'franco.fral': {
     dotaName: 'Melapelas',
-    rank: 2,
+    rank: 3,
     support: false,
     carry: false,
     tanque: true,
@@ -139,7 +139,7 @@ export const players: Players = {
   },
   mcadimad: {
     dotaName: 'MCadima',
-    rank: 4,
+    rank: 3,
     support: false,
     carry: true,
     tanque: true,

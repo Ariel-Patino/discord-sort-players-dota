@@ -6,8 +6,9 @@ import SortRankedCommand from './SortRankedCommand';
 class CommandFactory {
   static createCommand(comand: string, chatChannel: any): Command {
     switch (comand) {
-      case '!sort':
+      case '!sort-old':
         return new SortCommand(comand, chatChannel);
+      case '!sort':
       case '!sort-r':
         return new SortRankedCommand(comand, chatChannel);
       case '!list-p':

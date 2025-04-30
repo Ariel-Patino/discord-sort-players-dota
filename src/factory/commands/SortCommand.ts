@@ -18,7 +18,6 @@ export default class SortCommand extends Command {
 
   sentTeamsPlayers(members: any) {
     const shuffledMembers = this.suffleTeamMembers(members);
-
     const team1 = shuffledMembers.slice(
       0,
       Math.ceil(shuffledMembers.length / 2)
