@@ -1,2 +1,2 @@
-type Commands = '!sort' | '!sort-r' | '!list-p';
+type Commands = '!sort-old' | '!sort' | '!list-p' | '!sort-r';
 export default Commands;
