@@ -7,5 +7,6 @@ type Commands =
   | '!go'
   | '!lobby'
   | '!replay'
-  | '!help';
+  | '!help'
+  | '!swap';
 export default Commands;
