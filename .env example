@@ -1,1 +1,8 @@
 TOKEN={TOKEN FROM DISCORD}
+DB_HOST={localhost}
+DB_PORT={port}
+DB_USER={user}
+DB_PASSWORD={userpass}
+DB_NAME={game}
+DB_TABLE={players}
+DB_CONTAINER_NAME={game-mysql}

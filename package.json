@@ -7,7 +7,8 @@
     "format": "prettier --write .",
     "prepare": "husky",
     "start": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "echo \"No test specified\" && exit 0",
+    "setup-db": "ts-node src/init-db.ts"
   },
   "keywords": [],
   "author": "Vulture255",
@@ -28,7 +29,8 @@
     "discord-api-types": "^0.37.89",
     "discord.js": "^14.15.3",
     "dotenv": "^16.4.5",
-    "module-alias": "^2.2.3"
+    "module-alias": "^2.2.3",
+    "mysql2": "^3.14.1"
   },
   "_moduleAliases": {
     "@root": ".",

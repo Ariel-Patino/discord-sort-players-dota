@@ -1,4 +1,3 @@
-import 'module-alias/register';
 import * as l from '@root/textSource.json';
 
 const retieveChatMembers = (channel: any): any => {

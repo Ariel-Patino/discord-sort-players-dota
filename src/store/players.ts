@@ -13,14 +13,14 @@ interface Players {
 export const players: Players = {
   'ariel.patino': {
     dotaName: 'Vulture',
-    rank: 3,
+    rank: 3.8,
     support: true,
     carry: true,
     tanque: false,
   },
   vulture_255: {
     dotaName: 'Vulture',
-    rank: 3,
+    rank: 3.8,
     support: true,
     carry: true,
     tanque: false,
@@ -83,14 +83,14 @@ export const players: Players = {
   },
   hodric3734: {
     dotaName: 'Hodric',
-    rank: 2,
+    rank: 2.5,
     support: false,
     carry: false,
     tanque: true,
   },
   hodrick_45678: {
     dotaName: 'Hodric',
-    rank: 2,
+    rank: 2.5,
     support: false,
     carry: false,
     tanque: true,
@@ -139,14 +139,14 @@ export const players: Players = {
   },
   mcadimad: {
     dotaName: 'MCadima',
-    rank: 3,
+    rank: 3.5,
     support: false,
     carry: true,
     tanque: true,
   },
   'mgc0.': {
     dotaName: 'Mgco',
-    rank: 4,
+    rank: 3.5,
     support: true,
     carry: true,
     tanque: false,
