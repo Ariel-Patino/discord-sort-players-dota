@@ -7,7 +7,7 @@ import SortRankedCommand from '../game/SortRankedCommand';
 import RegroupCommand from '../game/RegroupCommand';
 import GoCommand from '../game/GoCommand';
 import HelpCommand from './HelpCommand';
-import SwapCommand from './swapTeamsCommand';
+import SwapCommand from './SwapTeamsCommand';
 
 class CommandFactory {
   static createCommand(comand: string, chatChannel: any): Command {
