@@ -34,10 +34,12 @@ export default class SortRankedCommand extends Command {
 
     const shuffled = known.sort(() => Math.random() - 0.5);
 
+    const applyNoise = Math.random() < 0.3;
+
     const rankedMembers = shuffled.map((member) => {
       const username = member.user.username;
       const base = Number(players[username]?.rank ?? 0);
-      const noise = (Math.random() - 0.5) * 0.2;
+      const noise = applyNoise ? (Math.random() - 0.5) * 0.2 : 0;
       return {
         username,
         rank: base + noise,
@@ -46,11 +48,16 @@ export default class SortRankedCommand extends Command {
 
     const team1: string[] = [];
     const team2: string[] = [];
-    let score1: number = 0;
-    let score2: number = 0;
+    let score1 = 0;
+    let score2 = 0;
+    const maxSize1 = Math.ceil(rankedMembers.length / 2);
+    const maxSize2 = Math.floor(rankedMembers.length / 2);
 
     for (const player of rankedMembers) {
-      if (score1 <= score2) {
+      if (
+        team1.length < maxSize1 &&
+        (score1 <= score2 || team2.length >= maxSize2)
+      ) {
         team1.push(player.username);
         score1 += player.rank;
       } else {
@@ -58,12 +65,6 @@ export default class SortRankedCommand extends Command {
         score2 += player.rank;
       }
     }
-
-    for (const member of unknown) {
-      const username = member.user.username;
-      (team1.length <= team2.length ? team1 : team2).push(username);
-    }
-
     const sortId = addSort({
       team1,
       team2,

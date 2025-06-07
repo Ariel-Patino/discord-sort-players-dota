@@ -3,6 +3,7 @@ import { getAllPlayers } from '@src/services/players.service';
 import { getSort } from '@src/store/sortHistory';
 import PlayerInfo from '@src/types/playersInfo';
 import { EmbedBuilder } from 'discord.js';
+import { setTeams } from '@src/state/teams';
 
 export default class ReplaySortCommand extends Command {
   constructor(command: string, chatChannel: any) {
@@ -27,6 +28,7 @@ export default class ReplaySortCommand extends Command {
     const score1Formatted = Number(sort.score1).toFixed(1).padStart(4, '0');
     const score2Formatted = Number(sort.score2).toFixed(1).padStart(4, '0');
 
+    setTeams(sort.team1, sort.team2);
     const embed = new EmbedBuilder()
       .setTitle(`Replaying Sort #${index + 1}`)
       .setColor(0x00ff99)
