@@ -8,5 +8,6 @@ type Commands =
   | '!lobby'
   | '!replay'
   | '!help'
-  | '!swap';
+  | '!swap'
+  | '!setrank';
 export default Commands;

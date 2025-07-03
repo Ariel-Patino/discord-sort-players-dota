@@ -8,6 +8,7 @@ import RegroupCommand from '../game/RegroupCommand';
 import GoCommand from '../game/GoCommand';
 import HelpCommand from './HelpCommand';
 import SwapCommand from './SwapTeamsCommand';
+import SetRankCommand from '../game/SetRankCommand';
 
 class CommandFactory {
   static createCommand(comand: string, chatChannel: any): Command {
@@ -32,6 +33,8 @@ class CommandFactory {
         return new HelpCommand(comand, chatChannel);
       case '!swap':
         return new SwapCommand(comand, chatChannel);
+      case '!setrank':
+        return new SetRankCommand(comand, chatChannel);
       default:
         throw new Error('Unknown command type');
     }

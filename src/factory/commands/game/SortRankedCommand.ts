@@ -1,6 +1,6 @@
 import Command from '../main/Command';
 import PlayerInfo from '@root/src/types/playersInfo';
-import { getAllPlayers } from '@root/src/services/players.service';
+import { getOrCreateAllPlayers } from '@root/src/services/players.service';
 import { sort } from '@root/textSource.json';
 import { EmbedBuilder, GuildMember, VoiceChannel } from 'discord.js';
 import { setTeams } from '@src/state/teams';
@@ -12,7 +12,6 @@ export default class SortRankedCommand extends Command {
   }
 
   async execute(): Promise<void> {
-    const players = await getAllPlayers();
     const guild = this.chatChannel.guild;
 
     const allVoiceMembers: GuildMember[] = [];
@@ -29,8 +28,9 @@ export default class SortRankedCommand extends Command {
       return;
     }
 
+    const players = await getOrCreateAllPlayers(allVoiceMembers);
+
     const known = allVoiceMembers.filter((m) => players[m.user.username]);
-    const unknown = allVoiceMembers.filter((m) => !players[m.user.username]);
 
     const shuffled = known.sort(() => Math.random() - 0.5);
 

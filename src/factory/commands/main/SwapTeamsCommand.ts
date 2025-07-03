@@ -9,7 +9,6 @@ export default class SwapCommand extends Command {
   async execute(): Promise<void> {
     const guild = this.chatChannel.guild;
 
-    // Eliminar el mensaje original del usuario (!swap)
     try {
       await this.chatChannel.delete();
     } catch (e) {
