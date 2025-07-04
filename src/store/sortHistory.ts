@@ -8,7 +8,7 @@ interface SortRecord {
   timestamp: number;
 }
 
-const MAX_SORTS = 10;
+const MAX_SORTS = 15;
 let sortHistory: SortRecord[] = [];
 
 export function addSort(result: SortRecord): number | null {

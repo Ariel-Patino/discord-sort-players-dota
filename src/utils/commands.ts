@@ -12,6 +12,7 @@ const validCommands: Commands[] = [
   '!help',
   '!swap',
   '!setrank',
+  '!move',
 ];
 
 const isValidCommandType = (type: string): type is Commands => {

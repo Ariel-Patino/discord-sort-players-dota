@@ -10,9 +10,7 @@ export default class RegroupCommand extends Command {
     const guild = this.chatChannel.guild;
 
     const targetChannel = guild.channels.cache.find(
-      (c: any) =>
-        c.type === 2 &&
-        c.name.toLowerCase().trim() === '🎤-Lobby-🎤'.toLowerCase().trim()
+      (c: any) => c.type === 2 && c.name.toLowerCase().trim().includes('lobby')
     ) as VoiceChannel;
 
     if (!targetChannel) {

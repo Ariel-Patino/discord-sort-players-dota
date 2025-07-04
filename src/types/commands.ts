@@ -9,5 +9,6 @@ type Commands =
   | '!replay'
   | '!help'
   | '!swap'
-  | '!setrank';
+  | '!setrank'
+  | '!move';
 export default Commands;

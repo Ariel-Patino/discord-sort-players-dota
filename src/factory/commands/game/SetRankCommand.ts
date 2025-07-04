@@ -1,5 +1,5 @@
 import Command from '../main/Command';
-import { generateSetRankComponents } from '@src/utils/setrank-ui';
+import { generateSetRankComponents } from '@root/src/components/setrank-ui';
 
 export default class SetRankCommand extends Command {
   constructor(command: string, chatChannel: any) {

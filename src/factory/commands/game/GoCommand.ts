@@ -20,14 +20,14 @@ export default class GoCommand extends Command {
 
     const sentinelChannel = guild.channels.cache.find(
       (c: any) =>
-        c.type === 2 &&
-        c.name.toLowerCase().trim() === '🧙-sentinel-🧙'.toLowerCase().trim()
+        (c.type === 2 && c.name.toLowerCase().trim().includes('sentinel')) ||
+        c.name.toLowerCase().trim().includes('radiant')
     ) as VoiceChannel;
 
     const scourgeChannel = guild.channels.cache.find(
       (c: any) =>
-        c.type === 2 &&
-        c.name.toLowerCase().trim() === '💀-scourge-💀'.toLowerCase().trim()
+        (c.type === 2 && c.name.toLowerCase().trim().includes('scourge')) ||
+        c.name.toLowerCase().trim().includes('dire')
     ) as VoiceChannel;
 
     if (!sentinelChannel || !scourgeChannel) {

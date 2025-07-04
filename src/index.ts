@@ -3,7 +3,7 @@ import { token } from './config';
 import { Client, GatewayIntentBits } from 'discord.js';
 import isValidCommandType from './utils/commands';
 import CommandFactory from './factory/commands/main/CommandFactory';
-import { generateSetRankComponents } from '@src/utils/setrank-ui';
+import { generateSetRankComponents } from '@root/src/components/setrank-ui';
 import { db } from '@src/db';
 import {
   ModalBuilder,

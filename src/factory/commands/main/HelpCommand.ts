@@ -33,8 +33,18 @@ export default class HelpCommand extends Command {
           value: 'Lists all players on db',
         },
         {
+          name: '`!setrank`',
+          value:
+            'Lets you select a player from a dropdown and assign a new rank (1.0 - 10.0). Only the user who used the command can interact.',
+        },
+        {
           name: '`!replay <n>`',
           value: 'Replays the sort with ID number `n`. Example: `!replay 2`.',
+        },
+        {
+          name: '`!move`',
+          value:
+            'Allows you to move any connected user to a voice channel. Only the user who executed the command can interact.',
         },
         {
           name: '`!go`',
