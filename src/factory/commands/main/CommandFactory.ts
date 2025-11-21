@@ -7,7 +7,7 @@ import SortRankedCommand from '../game/SortRankedCommand';
 import RegroupCommand from '../game/RegroupCommand';
 import GoCommand from '../game/GoCommand';
 import HelpCommand from './HelpCommand';
-import SwapCommand from './SwapTeamsCommand';
+import SwapCommand from '../game/SwapCommand';
 import SetRankCommand from '../game/SetRankCommand';
 import MoveCommand from '../game/MoveCommand';
 

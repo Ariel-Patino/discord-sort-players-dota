@@ -8,59 +8,47 @@ export default class HelpCommand extends Command {
 
   async execute(): Promise<void> {
     const embed = new EmbedBuilder()
-      .setTitle('Available Commands')
-      .setColor(0x3498db)
-      .addFields(
-        {
-          name: '`!sort`',
-          value:
-            'Sorts players into two balanced teams using ranking and randomness.',
-        },
-        {
-          name: '`!sort-old`',
-          value: 'Legacy sort algorithm without ranking.',
-        },
-        {
-          name: '`!sort-r`',
-          value: 'Same as !sort.',
-        },
-        {
-          name: '`!list`',
-          value: 'Lists all players connected',
-        },
-        {
-          name: '`!list-all`',
-          value: 'Lists all players on db',
-        },
-        {
-          name: '`!setrank`',
-          value:
-            'Lets you select a player from a dropdown and assign a new rank (1.0 - 10.0). Only the user who used the command can interact.',
-        },
-        {
-          name: '`!replay <n>`',
-          value: 'Replays the sort with ID number `n`. Example: `!replay 2`.',
-        },
-        {
-          name: '`!move`',
-          value:
-            'Allows you to move any connected user to a voice channel. Only the user who executed the command can interact.',
-        },
-        {
-          name: '`!go`',
-          value:
-            'Moves all sorted players into their respective channels after !sort.',
-        },
-        {
-          name: '`!lobby`',
-          value: 'Regroups all players into the lobby.',
-        },
-        {
-          name: '`!help`',
-          value: 'Displays this list of commands.',
-        }
-      )
-      .setFooter({ text: 'Sort Bot v0.7 VULTURE' });
+  .setTitle('📖 Available Commands')
+  .setDescription(
+    'Commands are grouped by category. ' +
+    'Use `!help <command>` if you want more details about one in particular (optional feature).'
+  )
+  .addFields(
+    {
+      name: '🎲 Sorting & Swaps',
+      value: [
+        '**`!sort`** – Sorts players into two balanced teams using rank + randomness.',
+        '**`!sort-old`** – Legacy sort algorithm without ranking.',
+        '**`!sort-r`** – Same as `!sort`.',
+        '**`!swap`** – Swap or move players between Sentinel and Scourge using the last sort.',
+        '**`!replay <n>`** – Replays sort with ID `n` (e.g. `!replay 2`).',
+      ].join('\n'),
+    },
+    {
+      name: '👥 Players & Ranks',
+      value: [
+        '**`!list`** – Lists all connected players.',
+        '**`!list-all`** – Lists all players in DB.',
+        '**`!setrank`** – Opens a dropdown to set a player rank (1.0 – 10.0).',
+      ].join('\n'),
+    },
+    {
+      name: '📡 Voice & Lobby',
+      value: [
+        '**`!move`** – Move any connected user to a voice channel.',
+        '**`!go`** – Moves sorted players into their respective channels after `!sort`.',
+        '**`!lobby`** – Sends all players back to the lobby.',
+      ].join('\n'),
+    },
+    {
+      name: 'ℹ️ Other',
+      value: [
+        '**`!help`** – Shows this help message.',
+      ].join('\n'),
+    },
+  )
+  .setFooter({ text: 'Sort Bot v0.7 VULTURE' });
+
 
     this.chatChannel.channel.send({ embeds: [embed] });
   }
