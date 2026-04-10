@@ -11,42 +11,7 @@ interface Players {
 }
 
 export const players: Players = {
-  'ariel.patino': {
-    dotaName: 'Vulture',
-    rank: 3.8,
-    support: true,
-    carry: true,
-    tanque: false,
-  },
-  vulture_255: {
-    dotaName: 'Vulture',
-    rank: 3.8,
-    support: true,
-    carry: true,
-    tanque: false,
-  },
-  alvaroavilaperez: {
-    dotaName: 'Capcom',
-    rank: 2,
-    support: false,
-    carry: true,
-    tanque: true,
-  },
-  isrgks77: {
-    dotaName: 'isrgks',
-    rank: 5,
-    support: false,
-    carry: true,
-    tanque: false,
-  },
-  rokko6963: {
-    dotaName: 'rokko',
-    rank: 0,
-    support: false,
-    carry: false,
-    tanque: true,
-  },
-  _crossover_: {
+  '_crossover_': {
     dotaName: 'Crossover',
     rank: 4,
     support: false,
@@ -60,12 +25,33 @@ export const players: Players = {
     carry: false,
     tanque: true,
   },
+  alvaroavilaperez: {
+    dotaName: 'Capcom',
+    rank: 2,
+    support: false,
+    carry: true,
+    tanque: true,
+  },
+  'ariel.patino': {
+    dotaName: 'Vulture',
+    rank: 4,
+    support: true,
+    carry: true,
+    tanque: false,
+  },
   carryover_26503: {
     dotaName: 'Carryover',
     rank: 0,
     support: false,
     carry: false,
     tanque: true,
+  },
+  cute_badger_46120: {
+    dotaName: 'neo',
+    rank: 3,
+    support: false,
+    carry: false,
+    tanque: false,
   },
   'franco.fral': {
     dotaName: 'Melapelas',
@@ -95,14 +81,28 @@ export const players: Players = {
     carry: false,
     tanque: true,
   },
-  joseluis6950: {
+  huancar1758: {
+    dotaName: 'huancar1758',
+    rank: 3,
+    support: false,
+    carry: false,
+    tanque: false,
+  },
+  isrgks77: {
+    dotaName: 'isrgks',
+    rank: 5,
+    support: false,
+    carry: true,
+    tanque: false,
+  },
+  itachi071641: {
     dotaName: 'Itachi',
     rank: 4,
     support: false,
     carry: true,
     tanque: true,
   },
-  itachi071641: {
+  joseluis6950: {
     dotaName: 'Itachi',
     rank: 4,
     support: false,
@@ -130,6 +130,13 @@ export const players: Players = {
     carry: true,
     tanque: true,
   },
+  marchelo107: {
+    dotaName: 'marchelo107',
+    rank: 2.5,
+    support: false,
+    carry: false,
+    tanque: false,
+  },
   mato4130: {
     dotaName: 'Mato',
     rank: 4,
@@ -144,19 +151,26 @@ export const players: Players = {
     carry: true,
     tanque: true,
   },
+  'mcadimad.': {
+    dotaName: 'mcadimad.',
+    rank: 1.5,
+    support: false,
+    carry: false,
+    tanque: false,
+  },
   'mgc0.': {
     dotaName: 'Mgco',
-    rank: 3.5,
+    rank: 4.5,
     support: true,
     carry: true,
     tanque: false,
   },
-  rampage4237: {
-    dotaName: 'Rampage',
-    rank: 5,
-    support: true,
-    carry: true,
-    tanque: true,
+  notysimo4092: {
+    dotaName: 'notysimo4092',
+    rank: 3,
+    support: false,
+    carry: false,
+    tanque: false,
   },
   rampage055646: {
     dotaName: 'Rampage',
@@ -172,8 +186,22 @@ export const players: Players = {
     carry: true,
     tanque: true,
   },
+  rampage4237: {
+    dotaName: 'Rampage',
+    rank: 5,
+    support: true,
+    carry: true,
+    tanque: true,
+  },
   richarde4999: {
     dotaName: 'Ecos',
+    rank: 0,
+    support: false,
+    carry: false,
+    tanque: true,
+  },
+  rokko6963: {
+    dotaName: 'rokko',
     rank: 0,
     support: false,
     carry: false,
@@ -183,6 +211,13 @@ export const players: Players = {
     dotaName: 'Vicho',
     rank: 2,
     support: false,
+    carry: true,
+    tanque: false,
+  },
+  vulture_255: {
+    dotaName: 'Vulture',
+    rank: 4,
+    support: true,
     carry: true,
     tanque: false,
   },
