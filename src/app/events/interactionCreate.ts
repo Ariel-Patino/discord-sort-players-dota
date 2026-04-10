@@ -1,58 +1,65 @@
 import type { Interaction } from 'discord.js';
 import Logger from '@src/infrastructure/logging/Logger';
+import { t } from '@src/localization';
 import ErrorPresenter from '@src/presentation/discord/ErrorPresenter';
-import { onSetRankPageButton } from '../interactions/buttons/onSetRankPageButton';
+import EmbedFactory from '@src/presentation/discord/embeds';
+import { onBulkMove } from '../interactions/onBulkMove';
+import { onBulkSetRank } from '../interactions/onBulkSetRank';
 import { onRankSubmit } from '../interactions/modals/onRankSubmit';
-import { resolveSlashCommand } from '../interactions/slash-commands/CommandResolver';
-import { onSetRankSelect } from '../interactions/select-menus/onSetRankSelect';
 
 export async function handleInteractionCreate(
   interaction: Interaction
 ): Promise<void> {
   try {
     if (interaction.isChatInputCommand()) {
-      const logContext = {
+      Logger.info('Ignored slash command because prefix-only mode is enabled.', {
         commandName: `/${interaction.commandName}`,
         guildId: interaction.guildId,
         userId: interaction.user.id,
-      };
-
-      Logger.info('Executing slash command.', {
-        ...logContext,
         metadata: {
           transport: 'slash',
         },
       });
 
-      await resolveSlashCommand(interaction);
-
-      Logger.info('Slash command completed.', {
-        ...logContext,
-        metadata: {
-          transport: 'slash',
-        },
+      await interaction.reply({
+        embeds: [EmbedFactory.info(undefined, t('errors.prefixOnlyCommands'))],
+        ephemeral: true,
       });
       return;
     }
 
     if (
       interaction.isStringSelectMenu() &&
-      interaction.customId.startsWith('setrank_select_page_')
+      interaction.customId.startsWith('move:')
     ) {
-      await onSetRankSelect(interaction);
+      await onBulkMove(interaction);
       return;
     }
 
-    if (interaction.isButton() && interaction.customId.startsWith('setrank_')) {
-      await onSetRankPageButton(interaction);
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith('setrank:')
+    ) {
+      await onBulkSetRank(interaction);
+      return;
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('move:')) {
+      await onBulkMove(interaction);
+      return;
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('setrank:')) {
+      await onBulkSetRank(interaction);
       return;
     }
 
     if (
       interaction.isModalSubmit() &&
-      interaction.customId.startsWith('setrank_modal:')
+      interaction.customId.startsWith('setrank:')
     ) {
       await onRankSubmit(interaction);
+      return;
     }
   } catch (error) {
     const interactionName = interaction.isChatInputCommand()

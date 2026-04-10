@@ -2,8 +2,8 @@
   "brandName": "Dota Team Sorter",
   "unknownPlayer": "Unregistered",
   "emptyValue": "No details available.",
-  "teamAName": "Sentinel",
-  "teamBName": "Scourge",
+  "teamAName": "Team 1",
+  "teamBName": "Team 2",
   "pageLabel": "Page {{current}} of {{total}}",
   "embed": {
     "infoTitle": "Information",

@@ -112,7 +112,7 @@ Recommended improvements:
 
 #### Listing flows
 Current state:
-- `!list` and `!list-all` already use embeds, but their formatting is minimal
+- `!list` and `!listall` already use embeds, but their formatting is minimal
 
 Recommended improvements:
 - add sorting and grouping options (online by rank, alphabetical, by role)

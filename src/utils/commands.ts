@@ -1,11 +1,9 @@
 import Commands from '../types/commands';
 
 const validCommands: Commands[] = [
-  '!sort-old',
   '!sort',
   '!list',
-  '!sort-r',
-  '!list-all',
+  '!listall',
   '!go',
   '!lobby',
   '!replay',

@@ -3,8 +3,7 @@
     "title": "Balanced Match",
     "teamField": "{{teamName}} (Rank {{score}})",
     "summary": "Created **{{teamCount}}** balanced teams for **{{playerCount}}** players.",
-    "footer": "Match ID: #{{sortId}} — Ready to deploy?",
-    "legacyDeprecated": "The legacy `!sort-old` command is deprecated. Use `/sort` or `!sort` instead."
+    "footer": "Match ID: #{{sortId}} — Go?"
   },
   "replay": {
     "title": "Replay Match #{{index}}",
@@ -15,8 +14,10 @@
     "success": "Teams have been moved to their match channels. Good luck and have fun!"
   },
   "move": {
-    "title": "Move Player",
-    "success": "Moved **{{member}}** to **{{channel}}**."
+    "title": "Bulk Player Movement",
+    "success": "Moved **{{member}}** to **{{channel}}**.",
+    "bulkSuccess": "Moved **{{count}}** players to **{{channel}}**.",
+    "partialSuccess": "Moved **{{count}}** players to **{{channel}}**. **{{failed}}** players could not be moved."
   },
   "lobby": {
     "title": "Lobby Update",

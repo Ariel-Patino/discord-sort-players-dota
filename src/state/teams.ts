@@ -12,8 +12,8 @@ export interface MatchSession {
 }
 
 const DEFAULT_TEAM_DEFINITIONS = [
-  { teamId: 'team-1', teamName: 'Sentinel' },
-  { teamId: 'team-2', teamName: 'Scourge' },
+  { teamId: 'team-1', teamName: 'Team 1' },
+  { teamId: 'team-2', teamName: 'Team 2' },
 ] as const;
 
 let currentMatchSession: MatchSession = {

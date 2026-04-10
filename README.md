@@ -91,16 +91,10 @@ This sequence will:
 4. seed initial player data when the table is empty
 5. start the Discord bot process
 
-To create more than two teams during a match, use:
+To create more than two teams during a match, use the prefix command with the desired team count:
 
 ```bash
 !sort 3
-```
-
-or the slash-command equivalent:
-
-```text
-/sort teams:3
 ```
 
 ### 4. Useful operational commands

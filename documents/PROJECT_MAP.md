@@ -107,8 +107,7 @@ Mapped command tokens currently include:
 
 - `!sort-old`
 - `!sort`
-- `!sort-r`
-- `!list-all`
+- `!listall`
 - `!list`
 - `!go`
 - `!lobby`

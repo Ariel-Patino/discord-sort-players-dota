@@ -1,7 +1,7 @@
 import { getAllPlayers } from '@src/services/players.service';
 import { t } from '@src/localization';
 import EmbedFactory from '@src/presentation/discord/embeds';
-import { setTeams } from '@src/state/teams';
+import { setMatchSession } from '@src/state/teams';
 import { addSort, getAllSorts, getSort } from '@src/store/sortHistory';
 import PlayerInfo from '@src/types/playersInfo';
 import Command, { type CommandMessage } from '../main/Command';
@@ -74,6 +74,8 @@ export default class SwapCommand extends Command {
       return;
     }
 
+    const firstTeamLabel = lastSort.teams[0]?.teamName ?? 'Team 1';
+    const secondTeamLabel = lastSort.teams[1]?.teamName ?? 'Team 2';
     const team1 = [...lastSort.team1];
     const team2 = [...lastSort.team2];
 
@@ -83,7 +85,7 @@ export default class SwapCommand extends Command {
 
       if (index1 >= team1.length || index2 >= team2.length) {
         this.chatChannel.channel.send(
-          `invalid position. Sentinel contains ${team1.length} players and Scourge has ${team2.length}.`
+          `Invalid position. ${firstTeamLabel} contains ${team1.length} players and ${secondTeamLabel} has ${team2.length}.`
         );
         return;
       }
@@ -103,14 +105,14 @@ export default class SwapCommand extends Command {
 
       if (index1 >= team1.length) {
         this.chatChannel.channel.send(
-          `invalid position. Sentinel contains ${team1.length} players.`
+          `Invalid position. ${firstTeamLabel} contains ${team1.length} players.`
         );
         return;
       }
 
       const moved = team1.splice(index1, 1)[0];
       if (!moved) {
-        this.chatChannel.channel.send('No players on that Sentinel position.');
+        this.chatChannel.channel.send(`No player was found in that ${firstTeamLabel} position.`);
         return;
       }
 
@@ -120,14 +122,14 @@ export default class SwapCommand extends Command {
 
       if (index2 >= team2.length) {
         this.chatChannel.channel.send(
-          `invalid position. Scourge contains ${team2.length} players.`
+          `Invalid position. ${secondTeamLabel} contains ${team2.length} players.`
         );
         return;
       }
 
       const moved = team2.splice(index2, 1)[0];
       if (!moved) {
-        this.chatChannel.channel.send('No players on that Scourge position.');
+        this.chatChannel.channel.send(`No player was found in that ${secondTeamLabel} position.`);
         return;
       }
 
@@ -139,7 +141,15 @@ export default class SwapCommand extends Command {
     const score1 = this.calculateScore(team1, players);
     const score2 = this.calculateScore(team2, players);
 
+    const updatedTeams = lastSort.teams.map((team, index) => ({
+      ...team,
+      players: index === 0 ? [...team1] : [...team2],
+      score: index === 0 ? score1 : score2,
+    }));
+
     const sortId = addSort({
+      sessionId: lastSort.sessionId,
+      teams: updatedTeams,
       team1,
       team2,
       score1,
@@ -165,7 +175,7 @@ export default class SwapCommand extends Command {
       teams: [
         {
           name: t('commands.sort.teamField', {
-            teamName: t('common.teamAName'),
+            teamName: updatedTeams[0]?.teamName ?? 'Team 1',
             score: score1Formatted,
           }),
           score: score1Formatted,
@@ -173,7 +183,7 @@ export default class SwapCommand extends Command {
         },
         {
           name: t('commands.sort.teamField', {
-            teamName: t('common.teamBName'),
+            teamName: updatedTeams[1]?.teamName ?? 'Team 2',
             score: score2Formatted,
           }),
           score: score2Formatted,
@@ -183,7 +193,14 @@ export default class SwapCommand extends Command {
     });
 
     this.chatChannel.channel.send({ embeds: [embed] });
-    setTeams(team1, team2);
+    setMatchSession({
+      sessionId: lastSort.sessionId,
+      createdAt: Date.now(),
+      teams: updatedTeams.map((team) => ({
+        ...team,
+        players: [...team.players],
+      })),
+    });
   }
 
   private calculateScore(team: string[], players: Record<string, PlayerInfo>): number {
@@ -205,11 +222,11 @@ export default class SwapCommand extends Command {
 
   private formatTeam(teamUsernames: string[], players: Record<string, PlayerInfo>) {
     return teamUsernames
-      .map((username) => {
+      .map((username, index) => {
         const info = players[username];
         return info
-          ? `• ${info.dotaName} (R${info.rank})`
-          : `• ${username} (${t('common.unknownPlayer')})`;
+          ? `   ${index + 1}. ${info.dotaName} (R${info.rank})`
+          : `   ${index + 1}. ${username} (${t('common.unknownPlayer')})`;
       })
       .join('\n');
   }

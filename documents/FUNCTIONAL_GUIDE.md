@@ -156,8 +156,8 @@ This keeps entry-point logic small and moves business behavior into dedicated cl
 
 | Group | Commands | Functional role |
 |---|---|---|
-| Sorting | `!sort-old`, `!sort`, `!sort-r`, `!swap`, `!replay` | Build, adjust, and restore team compositions |
-| Player data | `!list`, `!list-all`, `!setrank` | Inspect persisted player metadata and update ranks |
+| Sorting | `!sort-old`, `!sort`, `!swap`, `!replay` | Build, adjust, and restore team compositions |
+| Player data | `!list`, `!listall`, `!setrank` | Inspect persisted player metadata and update ranks |
 | Voice control | `!go`, `!lobby`, `!move` | Move members across voice channels |
 | Help | `!help` | Emit the command reference embed |
 
@@ -180,7 +180,7 @@ Flow:
 
 This flow is **stateless** relative to the ranked/history system. It reports teams but does not persist a new sort record.
 
-## 5.2 Ranked sort flow (`!sort` and `!sort-r`)
+## 5.2 Ranked sort flow (`!sort`)
 
 Implemented in `src/factory/commands/game/SortRankedCommand.ts`.
 
@@ -291,7 +291,7 @@ Flow:
 
 This command is effectively the inverse of the deployment flow.
 
-## 5.7 Player listing flows (`!list`, `!list-all`)
+## 5.7 Player listing flows (`!list`, `!listall`)
 
 ### `!list`
 Implemented in `src/factory/commands/players/ListOnlinePlayersCommand.ts`.
@@ -303,7 +303,7 @@ Flow:
 - merge live voice presence with stored metadata
 - render an embed of online players and ranks
 
-### `!list-all`
+### `!listall`
 Implemented in `src/factory/commands/players/ListPlayersCommand.ts`.
 
 Flow:

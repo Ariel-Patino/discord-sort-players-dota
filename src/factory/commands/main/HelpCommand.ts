@@ -18,9 +18,6 @@ export default class HelpCommand extends Command {
           name: '🎲 Sorting & Swaps',
           value: [
             '**`!sort [teams]`** – Sorts players into a configurable number of balanced teams (defaults to 2).',
-            '**`/sort teams:<n>`** – Slash command version of the balanced team generator.',
-            '**`!sort-old`** – Deprecated legacy alias. Use `!sort` or `/sort` instead.',
-            '**`!sort-r [teams]`** – Same as `!sort`.',
             '**`!swap`** – Swap or move players between teams for two-team matches.',
             '**`!replay <n>`** – Replays sort with ID `n` (e.g. `!replay 2`).',
           ].join('\n'),
@@ -29,14 +26,14 @@ export default class HelpCommand extends Command {
           name: '👥 Players & Ranks',
           value: [
             '**`!list`** – Lists all connected players.',
-            '**`!list-all`** – Lists all players in DB.',
+            '**`!listall`** – Lists all players in DB.',
             `**\`!setrank\`** – Opens a dropdown to set a player rank (${formatRankBounds()}).`,
           ].join('\n'),
         },
         {
           name: '📡 Voice & Lobby',
           value: [
-            '**`!move`** – Move any connected user to a voice channel.',
+            '**`!move`** – Move one or more connected users to a voice channel.',
             '**`!go`** – Moves sorted players into their respective channels after `!sort`.',
             '**`!lobby`** – Sends all players back to the lobby.',
           ].join('\n'),

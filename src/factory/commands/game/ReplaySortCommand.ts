@@ -63,11 +63,11 @@ export default class ReplaySortCommand extends Command {
     players: Record<string, PlayerInfo>
   ) {
     return teamUsernames
-      .map((username) => {
+      .map((username, index) => {
         const info = players[username];
         return info
-          ? `• ${info.dotaName} (R${info.rank})`
-          : `• ${username} (${t('common.unknownPlayer')})`;
+          ? `   ${index + 1}. ${info.dotaName} (R${info.rank})`
+          : `   ${index + 1}. ${username} (${t('common.unknownPlayer')})`;
       })
       .join('\n');
   }

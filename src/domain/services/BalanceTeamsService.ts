@@ -17,6 +17,7 @@ export interface BalanceTeamsOptions {
 interface RankedPlayer {
   player: Player;
   effectiveRank: number;
+  randomizedOrder: number;
 }
 
 interface TeamBucket extends SortResultTeam {
@@ -40,12 +41,14 @@ export function balancePlayersIntoTeams(
 
   const shuffledPlayers = shufflePlayers(players, random);
   const rankedPlayers = applyNoise(shuffledPlayers, options.noise, random).sort(
-    (left, right) => right.effectiveRank - left.effectiveRank
+    (left, right) =>
+      right.effectiveRank - left.effectiveRank ||
+      left.randomizedOrder - right.randomizedOrder
   );
   const teams = createTeamBuckets(teamCount, players.length, options.teamNames);
 
   for (const rankedPlayer of rankedPlayers) {
-    const targetTeam = selectNextTeam(teams);
+    const targetTeam = selectNextTeam(teams, random);
     targetTeam.players.push(rankedPlayer.player.id);
     targetTeam.score += rankedPlayer.effectiveRank;
   }
@@ -87,25 +90,17 @@ function resolveTeamName(index: number, teamNames: string[]): string {
     return teamNames[index];
   }
 
-  if (index === 0) {
-    return 'Sentinel';
-  }
-
-  if (index === 1) {
-    return 'Scourge';
-  }
-
   return `Team ${index + 1}`;
 }
 
-function selectNextTeam(teams: TeamBucket[]): TeamBucket {
+function selectNextTeam(
+  teams: TeamBucket[],
+  random: () => number
+): TeamBucket {
   const availableTeams = teams.filter((team) => team.players.length < team.capacity);
 
   availableTeams.sort(
-    (left, right) =>
-      left.score - right.score ||
-      left.players.length - right.players.length ||
-      left.teamId.localeCompare(right.teamId)
+    (left, right) => left.score - right.score || left.players.length - right.players.length
   );
 
   const [selectedTeam] = availableTeams;
@@ -114,7 +109,13 @@ function selectNextTeam(teams: TeamBucket[]): TeamBucket {
     throw new Error('No available team could be selected for player assignment.');
   }
 
-  return selectedTeam;
+  const equallyBalancedTeams = availableTeams.filter(
+    (team) =>
+      team.score === selectedTeam.score &&
+      team.players.length === selectedTeam.players.length
+  );
+
+  return equallyBalancedTeams[Math.floor(random() * equallyBalancedTeams.length)] ?? selectedTeam;
 }
 
 function shufflePlayers(players: Player[], random: () => number): Player[] {
@@ -139,13 +140,17 @@ function applyNoise(
   const isEnabled = noiseOptions?.enabled ?? false;
   const applyChance = noiseOptions?.applyChance ?? 0;
   const amplitude = noiseOptions?.amplitude ?? 0;
-  const shouldApplyNoise =
-    isEnabled && applyChance > 0 && amplitude > 0 && random() < applyChance;
 
-  return players.map((player) => ({
-    player,
-    effectiveRank:
-      player.rank +
-      (shouldApplyNoise ? (random() - 0.5) * amplitude : 0),
-  }));
+  return players.map((player, index) => {
+    const shouldApplyNoise =
+      isEnabled && applyChance > 0 && amplitude > 0 && random() < applyChance;
+
+    return {
+      player,
+      randomizedOrder: index,
+      effectiveRank:
+        player.rank +
+        (shouldApplyNoise ? (random() - 0.5) * amplitude : 0),
+    };
+  });
 }

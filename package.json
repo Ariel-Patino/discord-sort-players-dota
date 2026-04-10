@@ -9,7 +9,6 @@
     "start": "docker compose up --build",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "start:bot": "ts-node --transpile-only src/index.ts",
-    "publish:slash-commands": "ts-node --transpile-only src/infrastructure/discord/slash-commands/publish.ts",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "setup-db": "ts-node --transpile-only src/init-db.ts",

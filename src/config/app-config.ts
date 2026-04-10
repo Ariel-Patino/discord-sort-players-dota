@@ -113,10 +113,10 @@ export function readTeamChannelIdsFromEnv(
 
 export const appConfig: AppConfig = {
   rank: {
-    min: 1.0,
+    min: 0.1,
     max: 10.0,
     defaultValue: 1.5,
-    precisionStep: 0.1,
+    precisionStep: 0.01,
   },
   sort: {
     teams: {
@@ -200,5 +200,5 @@ export function normalizeRank(rawValue: number): number {
 
 export function formatRankBounds(): string {
   const { min, max } = appConfig.rank;
-  return `${min.toFixed(1)} - ${max.toFixed(1)}`;
+  return `${min.toFixed(2)} - ${max.toFixed(2)}`;
 }

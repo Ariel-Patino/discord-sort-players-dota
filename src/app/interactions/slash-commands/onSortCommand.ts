@@ -9,6 +9,7 @@ import { appConfig } from '@src/config/app-config';
 import type { Player } from '@src/domain/models/Player';
 import { t } from '@src/localization';
 import EmbedFactory from '@src/presentation/discord/embeds';
+import { resolveVoiceChannelTeamLabels } from '@src/presentation/discord/team-labels';
 import { getOrCreateAllPlayers } from '@src/services/players.service';
 import { setMatchSession } from '@src/state/teams';
 import { addSort } from '@src/store/sortHistory';
@@ -110,8 +111,14 @@ export async function onSortCommand(
     return;
   }
 
+  const teamNames = await resolveVoiceChannelTeamLabels(
+    guild,
+    requestedTeamCount
+  );
+
   const result = sortPlayersUseCase.execute(sortablePlayers, {
     teamCount: requestedTeamCount,
+    teamNames,
     noise: {
       enabled: true,
       applyChance: appConfig.sort.noise.applyChance,
@@ -177,11 +184,11 @@ function formatTeam(
   playersById: Map<string, Player>
 ): string {
   return teamPlayerIds
-    .map((playerId) => {
+    .map((playerId, index) => {
       const player = playersById.get(playerId);
       return player
-        ? `• ${player.displayName} (R${player.rank})`
-        : `• ${playerId} (${t('common.unknownPlayer')})`;
+        ? `   ${index + 1}. ${player.displayName} (R${player.rank})`
+        : `   ${index + 1}. ${playerId} (${t('common.unknownPlayer')})`;
     })
     .join('\n');
 }

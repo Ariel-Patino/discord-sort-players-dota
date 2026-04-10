@@ -1,5 +1,10 @@
 import { EmbedBuilder } from 'discord.js';
 import { t } from '@src/localization';
+import {
+  BOT_TITLE,
+  PRIMARY_EMBED_COLOR,
+} from '@src/shared/constants/branding';
+import { getFallbackTeamLabel } from './team-labels';
 
 export interface MatchEmbedTeamData {
   name?: string;
@@ -22,7 +27,7 @@ export default class EmbedFactory {
     success: 0x2ecc71,
     warning: 0xf1c40f,
     error: 0xe74c3c,
-    match: 0x8b5cf6,
+    match: PRIMARY_EMBED_COLOR,
   } as const;
 
   static info(
@@ -69,15 +74,11 @@ export default class EmbedFactory {
         name:
           team.name ??
           t('commands.sort.teamField', {
-            teamName:
-              index === 0
-                ? t('common.teamAName')
-                : index === 1
-                  ? t('common.teamBName')
-                  : `Team ${index + 1}`,
+            teamName: getFallbackTeamLabel(index),
             score: team.score,
           }),
         value: team.players || t('common.emptyValue'),
+        inline: false,
       }))
     );
 
@@ -96,7 +97,7 @@ export default class EmbedFactory {
     const embed = new EmbedBuilder()
       .setColor(color)
       .setTitle(title)
-      .setFooter({ text: t('common.brandName') });
+      .setFooter({ text: BOT_TITLE });
 
     if (description) {
       embed.setDescription(description);

@@ -1,9 +1,7 @@
 type Commands =
-  | '!sort-old'
   | '!sort'
   | '!list'
-  | '!sort-r'
-  | '!list-all'
+  | '!listall'
   | '!go'
   | '!lobby'
   | '!replay'

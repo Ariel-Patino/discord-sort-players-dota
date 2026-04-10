@@ -221,7 +221,7 @@ This sequence establishes that application availability depends on:
 
 The startup path is **serialized and deterministic**, which reduces race conditions between the bot and the DB service.
 
-## 5.2 Ranked sort sequence (`!sort` / `!sort-r`)
+## 5.2 Ranked sort sequence (`!sort`)
 
 ```mermaid
 sequenceDiagram
@@ -236,7 +236,7 @@ sequenceDiagram
     participant History as sortHistory.ts
     participant Teams as teams.ts
 
-    Discord->>App: `messageCreate("!sort" | "!sort-r")`
+    Discord->>App: `messageCreate("!sort")`
     App->>Validator: `isValidCommandType(baseCommand)`
     Validator-->>App: valid command
     App->>Factory: `createCommand(message.content, message)`

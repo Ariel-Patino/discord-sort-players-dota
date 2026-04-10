@@ -1,10 +1,23 @@
 {
   "rank": {
     "modalTitle": "Update Rank",
-    "inputLabel": "New rank ({{bounds}})",
-    "choosePlayer": "Choose a player"
+    "modalTitleWithPlayer": "Update Rank — {{player}}",
+    "inputLabel": "Rank value",
+    "inputLabelWithPlayer": "New rank for {{player}}",
+    "inputPlaceholder": "Enter rank (0.10 - 10.00)",
+    "choosePlayer": "Choose a player to edit",
+    "prompt": "Select a connected player to open the rank editor immediately. Accepted values: **{{bounds}}**.",
+    "noPlayerSelected": "None yet",
+    "noRankSelected": "Not selected yet",
+    "choosePlayers": "Select players to update",
+    "selectRankPlaceholder": "Select the new rank",
+    "openInputLabel": "Set rank value",
+    "saveLabel": "Save"
   },
   "move": {
-    "prompt": "Select a user and a voice channel to move."
+    "prompt": "Select one or more connected players, choose a destination voice channel, and click **Move**.",
+    "selectPlayersPlaceholder": "Select players to move",
+    "noChannelSelected": "Not selected yet",
+    "executeLabel": "Move"
   }
 }

@@ -2,7 +2,6 @@ import type Commands from '@src/types/commands';
 import Command, { type CommandMessage } from './Command';
 import ListPlayersCommand from '../players/ListPlayersCommand';
 import ListOnlinePlayersCommand from '../players/ListOnlinePlayersCommand';
-import SortCommand from '../game/SortCommand';
 import ReplaySortCommand from '../game/ReplaySortCommand';
 import SortRankedCommand from '../game/SortRankedCommand';
 import RegroupCommand from '../game/RegroupCommand';
@@ -18,10 +17,8 @@ type CommandFactoryEntry = (
 ) => Command;
 
 const commandRegistry: Record<Commands, CommandFactoryEntry> = {
-  '!sort-old': (command, chatChannel) => new SortCommand(command, chatChannel),
   '!sort': (command, chatChannel) => new SortRankedCommand(command, chatChannel),
-  '!sort-r': (command, chatChannel) => new SortRankedCommand(command, chatChannel),
-  '!list-all': (command, chatChannel) => new ListPlayersCommand(command, chatChannel),
+  '!listall': (command, chatChannel) => new ListPlayersCommand(command, chatChannel),
   '!list': (command, chatChannel) => new ListOnlinePlayersCommand(command, chatChannel),
   '!go': (command, chatChannel) => new GoCommand(command, chatChannel),
   '!lobby': (command, chatChannel) => new RegroupCommand(command, chatChannel),
