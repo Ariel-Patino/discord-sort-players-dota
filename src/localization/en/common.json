@@ -1,0 +1,14 @@
+{
+  "brandName": "Dota Team Sorter",
+  "unknownPlayer": "Unregistered",
+  "emptyValue": "No details available.",
+  "teamAName": "Sentinel",
+  "teamBName": "Scourge",
+  "pageLabel": "Page {{current}} of {{total}}",
+  "embed": {
+    "infoTitle": "Information",
+    "successTitle": "Success",
+    "warningTitle": "Warning",
+    "errorTitle": "Error"
+  }
+}

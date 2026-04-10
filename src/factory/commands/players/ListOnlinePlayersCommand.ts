@@ -1,20 +1,21 @@
-import Command from '../main/Command';
-import { EmbedBuilder, GuildMember, VoiceChannel } from 'discord.js';
+import { ChannelType, GuildMember, VoiceChannel } from 'discord.js';
 import { getAllPlayers } from '@src/services/players.service';
+import { t } from '@src/localization';
+import EmbedFactory from '@src/presentation/discord/embeds';
 import PlayerInfo from '@src/types/playersInfo';
+import Command, { type CommandMessage } from '../main/Command';
 
 export default class ListOnlinePlayersCommand extends Command {
-  constructor(command: string, chatChannel: any) {
+  constructor(command: string, chatChannel: CommandMessage) {
     super(command, chatChannel);
   }
 
   async execute(): Promise<void> {
     const guild = this.chatChannel.guild;
-
     const allVoiceMembers: GuildMember[] = [];
 
-    guild.channels.cache.forEach((channel: any) => {
-      if (channel.type === 2 && channel.members?.size > 0) {
+    guild.channels.cache.forEach((channel) => {
+      if (channel.type === ChannelType.GuildVoice && channel.members.size > 0) {
         const voiceChannel = channel as VoiceChannel;
         allVoiceMembers.push(...voiceChannel.members.values());
       }
@@ -30,17 +31,17 @@ export default class ListOnlinePlayersCommand extends Command {
     const dbPlayers = await getAllPlayers();
     const playerMap = new Map<string, PlayerInfo>(Object.entries(dbPlayers));
 
-    const lines = allVoiceMembers.map((m) => {
-      const info = playerMap.get(m.user.username);
+    const lines = allVoiceMembers.map((member) => {
+      const info = playerMap.get(member.user.username);
       return info
         ? `• ${info.dotaName} (R${info.rank})`
-        : `• ${m.user.username} (UNKNOWN)`;
+        : `• ${member.user.username} (${t('common.unknownPlayer')})`;
     });
 
-    const embed = new EmbedBuilder()
-      .setTitle('🟢 Online Players')
-      .setColor(0x00ff00)
-      .setDescription(lines.join('\n'));
+    const embed = EmbedFactory.info(
+      `🟢 ${t('commands.list.onlineTitle')}`,
+      lines.join('\n')
+    );
 
     this.chatChannel.channel.send({ embeds: [embed] });
   }

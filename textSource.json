@@ -1,8 +1,4 @@
 {
-  "sort": {
-    "errors": {
-      "errorVoiceChannel": "Please connect to server, General voice channel!",
-      "errorMinPlayers": "R U a f* loser?, call someone else to play with!"
-    }
-  }
+  "deprecated": true,
+  "message": "User-facing strings have been moved to src/localization/en/*.json."
 }

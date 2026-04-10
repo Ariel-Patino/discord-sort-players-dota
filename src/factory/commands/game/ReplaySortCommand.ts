@@ -1,12 +1,13 @@
-import Command from '../main/Command';
 import { getAllPlayers } from '@src/services/players.service';
+import { t } from '@src/localization';
+import EmbedFactory from '@src/presentation/discord/embeds';
+import { setTeams } from '@src/state/teams';
 import { getSort } from '@src/store/sortHistory';
 import PlayerInfo from '@src/types/playersInfo';
-import { EmbedBuilder } from 'discord.js';
-import { setTeams } from '@src/state/teams';
+import Command, { type CommandMessage } from '../main/Command';
 
 export default class ReplaySortCommand extends Command {
-  constructor(command: string, chatChannel: any) {
+  constructor(command: string, chatChannel: CommandMessage) {
     super(command, chatChannel);
   }
 
@@ -29,20 +30,18 @@ export default class ReplaySortCommand extends Command {
     const score2Formatted = Number(sort.score2).toFixed(1).padStart(4, '0');
 
     setTeams(sort.team1, sort.team2);
-    const embed = new EmbedBuilder()
-      .setTitle(`Replaying Sort #${index + 1}`)
-      .setColor(0x00ff99)
-      .addFields(
-        {
-          name: `💀 Sentinel (Rank ${score1Formatted}) 💀`,
-          value: this.formatTeam(sort.team1, players),
-        },
-        {
-          name: `☠️ Scourge (Rank ${score2Formatted}) ☠️`,
-          value: this.formatTeam(sort.team2, players),
-        }
-      )
-      .setFooter({ text: 'Use !go to start the game.' });
+    const embed = EmbedFactory.match({
+      title: t('commands.replay.title', { index: index + 1 }),
+      footerText: t('commands.replay.footer'),
+      teamA: {
+        score: score1Formatted,
+        players: this.formatTeam(sort.team1, players),
+      },
+      teamB: {
+        score: score2Formatted,
+        players: this.formatTeam(sort.team2, players),
+      },
+    });
 
     this.chatChannel.channel.send({ embeds: [embed] });
   }
@@ -56,7 +55,7 @@ export default class ReplaySortCommand extends Command {
         const info = players[username];
         return info
           ? `• ${info.dotaName} (R${info.rank})`
-          : `• ${username} (UNKNOWN)`;
+          : `• ${username} (${t('common.unknownPlayer')})`;
       })
       .join('\n');
   }

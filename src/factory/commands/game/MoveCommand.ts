@@ -1,9 +1,16 @@
-import Command from '../main/Command';
-import { ComponentType, VoiceChannel } from 'discord.js';
+import {
+  ChannelType,
+  ComponentType,
+  VoiceChannel,
+} from 'discord.js';
 import { createMenu, disableRows } from '@src/components/move-ui';
+import { appConfig } from '@src/config/app-config';
+import { t } from '@src/localization';
+import EmbedFactory from '@src/presentation/discord/embeds';
+import Command, { type CommandMessage } from '../main/Command';
 
 export default class MoveCommand extends Command {
-  constructor(command: string, chatChannel: any) {
+  constructor(command: string, chatChannel: CommandMessage) {
     super(command, chatChannel);
   }
 
@@ -12,22 +19,27 @@ export default class MoveCommand extends Command {
     const authorId = this.chatChannel.author.id;
 
     const connectedMembers = guild.members.cache
-      .filter((m: any) => m.voice.channel)
-      .map((m: any) => ({
-        label: m.displayName,
-        value: m.id,
+      .filter((member) => member.voice.channel)
+      .map((member) => ({
+        label: member.displayName,
+        value: member.id,
       }));
 
     if (connectedMembers.length === 0) {
-      await this.chatChannel.channel.send('No users are connected to voice.');
+      await this.chatChannel.channel.send({
+        embeds: [EmbedFactory.warning(undefined, t('errors.noConnectedUsers'))],
+      });
       return;
     }
 
     const voiceChannels = guild.channels.cache
-      .filter((c: any) => c.type === 2)
-      .map((c: any) => ({
-        label: c.name,
-        value: c.id,
+      .filter(
+        (channel): channel is VoiceChannel =>
+          channel.type === ChannelType.GuildVoice
+      )
+      .map((channel) => ({
+        label: channel.name,
+        value: channel.id,
       }));
 
     const selectUserRow = createMenu(
@@ -42,21 +54,23 @@ export default class MoveCommand extends Command {
     );
 
     const message = await this.chatChannel.channel.send({
-      content: 'Select a user and a channel to move them:',
+      embeds: [
+        EmbedFactory.info(t('commands.move.title'), t('interactions.move.prompt')),
+      ],
       components: [selectUserRow, selectChannelRow],
     });
 
     const collector = message.createMessageComponentCollector({
       componentType: ComponentType.StringSelect,
-      time: 60000,
+      time: appConfig.interactions.moveSelectionMs,
     });
 
     const state: { userId?: string; channelId?: string } = {};
 
-    collector.on('collect', async (interaction: any) => {
+    collector.on('collect', async (interaction) => {
       if (interaction.user.id !== authorId) {
         await interaction.reply({
-          content: '❌ U need to have the power to change this.',
+          embeds: [EmbedFactory.error(undefined, t('errors.unauthorizedInteraction'))],
           ephemeral: true,
         });
         return;
@@ -72,19 +86,25 @@ export default class MoveCommand extends Command {
 
       if (state.userId && state.channelId) {
         const member = guild.members.cache.get(state.userId);
-        const channel = guild.channels.cache.get(
-          state.channelId
-        ) as VoiceChannel;
+        const channel = guild.channels.cache.get(state.channelId);
 
-        if (member && channel) {
+        if (member && channel?.type === ChannelType.GuildVoice) {
           await member.voice.setChannel(channel);
-          await this.chatChannel.channel.send(
-            `✅ Moved **${member.displayName}** to **${channel.name}**.`
-          );
+          await this.chatChannel.channel.send({
+            embeds: [
+              EmbedFactory.success(
+                t('commands.move.title'),
+                t('commands.move.success', {
+                  member: member.displayName,
+                  channel: channel.name,
+                })
+              ),
+            ],
+          });
         } else {
-          await this.chatChannel.channel.send(
-            `⚠️ Could not complete the move.`
-          );
+          await this.chatChannel.channel.send({
+            embeds: [EmbedFactory.error(undefined, t('errors.moveFailed'))],
+          });
         }
 
         collector.stop();

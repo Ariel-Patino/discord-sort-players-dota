@@ -1,0 +1,10 @@
+{
+  "rank": {
+    "modalTitle": "Update Rank",
+    "inputLabel": "New rank ({{bounds}})",
+    "choosePlayer": "Choose a player"
+  },
+  "move": {
+    "prompt": "Select a user and a voice channel to move."
+  }
+}

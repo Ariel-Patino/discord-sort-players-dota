@@ -1,13 +1,15 @@
 import mysql from 'mysql2/promise';
-import { config } from './config';
+import { getDatabaseConfig } from './config';
+
+const databaseConfig = getDatabaseConfig();
 
 export const db = mysql.createPool({
-  host: config.dbHost,
-  port: config.dbPort,
-  user: config.dbUser,
-  password: config.dbPassword,
-  database: config.dbName,
+  host: databaseConfig.host,
+  port: databaseConfig.port,
+  user: databaseConfig.user,
+  password: databaseConfig.password,
+  database: databaseConfig.name,
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: databaseConfig.connectionLimit,
   queueLimit: 0,
 });

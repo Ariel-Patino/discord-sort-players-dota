@@ -1,12 +1,13 @@
-import Command from '../main/Command';
-import { EmbedBuilder } from 'discord.js';
 import { getAllPlayers } from '@src/services/players.service';
-import PlayerInfo from '@src/types/playersInfo';
-import { getAllSorts, getSort, addSort } from '@src/store/sortHistory';
+import { t } from '@src/localization';
+import EmbedFactory from '@src/presentation/discord/embeds';
 import { setTeams } from '@src/state/teams';
+import { addSort, getAllSorts, getSort } from '@src/store/sortHistory';
+import PlayerInfo from '@src/types/playersInfo';
+import Command, { type CommandMessage } from '../main/Command';
 
 export default class SwapCommand extends Command {
-  constructor(command: string, chatChannel: any) {
+  constructor(command: string, chatChannel: CommandMessage) {
     super(command, chatChannel);
   }
 
@@ -142,22 +143,18 @@ export default class SwapCommand extends Command {
     const score1Formatted = score1.toFixed(1).padStart(4, '0');
     const score2Formatted = score2.toFixed(1).padStart(4, '0');
 
-    const embed = new EmbedBuilder()
-      .setTitle('🔥 DOTITA 🔥')
-      .setColor(0xff0000)
-      .addFields(
-        {
-          name: `💀 Sentinel (Rank ${score1Formatted}) 💀`,
-          value: this.formatTeam(team1, players),
-        },
-        {
-          name: `☠️ Scourge (Rank ${score2Formatted}) ☠️`,
-          value: this.formatTeam(team2, players),
-        }
-      )
-      .setFooter({
-        text: `Sort ID: #${sortId} — GO?`,
-      });
+    const embed = EmbedFactory.match({
+      title: `🎮 ${t('commands.sort.title')}`,
+      footerText: t('commands.sort.footer', { sortId }),
+      teamA: {
+        score: score1Formatted,
+        players: this.formatTeam(team1, players),
+      },
+      teamB: {
+        score: score2Formatted,
+        players: this.formatTeam(team2, players),
+      },
+    });
 
     this.chatChannel.channel.send({ embeds: [embed] });
     setTeams(team1, team2);
@@ -186,7 +183,7 @@ export default class SwapCommand extends Command {
         const info = players[username];
         return info
           ? `• ${info.dotaName} (R${info.rank})`
-          : `• ${username} (UNKNOWN)`;
+          : `• ${username} (${t('common.unknownPlayer')})`;
       })
       .join('\n');
   }

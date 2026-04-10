@@ -1,4 +1,5 @@
-import Command from './Command';
+import type Commands from '@src/types/commands';
+import Command, { type CommandMessage } from './Command';
 import ListPlayersCommand from '../players/ListPlayersCommand';
 import ListOnlinePlayersCommand from '../players/ListOnlinePlayersCommand';
 import SortCommand from '../game/SortCommand';
@@ -11,36 +12,36 @@ import SwapCommand from '../game/SwapCommand';
 import SetRankCommand from '../game/SetRankCommand';
 import MoveCommand from '../game/MoveCommand';
 
+type CommandFactoryEntry = (
+  command: string,
+  chatChannel: CommandMessage
+) => Command;
+
+const commandRegistry: Record<Commands, CommandFactoryEntry> = {
+  '!sort-old': (command, chatChannel) => new SortCommand(command, chatChannel),
+  '!sort': (command, chatChannel) => new SortRankedCommand(command, chatChannel),
+  '!sort-r': (command, chatChannel) => new SortRankedCommand(command, chatChannel),
+  '!list-all': (command, chatChannel) => new ListPlayersCommand(command, chatChannel),
+  '!list': (command, chatChannel) => new ListOnlinePlayersCommand(command, chatChannel),
+  '!go': (command, chatChannel) => new GoCommand(command, chatChannel),
+  '!lobby': (command, chatChannel) => new RegroupCommand(command, chatChannel),
+  '!replay': (command, chatChannel) => new ReplaySortCommand(command, chatChannel),
+  '!help': (command, chatChannel) => new HelpCommand(command, chatChannel),
+  '!swap': (command, chatChannel) => new SwapCommand(command, chatChannel),
+  '!setrank': (command, chatChannel) => new SetRankCommand(command, chatChannel),
+  '!move': (command, chatChannel) => new MoveCommand(command, chatChannel),
+};
+
 class CommandFactory {
-  static createCommand(comand: string, chatChannel: any): Command {
-    const baseCommand = comand.split(' ')[0].toLowerCase();
-    switch (baseCommand) {
-      case '!sort-old':
-        return new SortCommand(comand, chatChannel);
-      case '!sort':
-      case '!sort-r':
-        return new SortRankedCommand(comand, chatChannel);
-      case '!list-all':
-        return new ListPlayersCommand(comand, chatChannel);
-      case '!list':
-        return new ListOnlinePlayersCommand(comand, chatChannel);
-      case '!go':
-        return new GoCommand(comand, chatChannel);
-      case '!lobby':
-        return new RegroupCommand(comand, chatChannel);
-      case '!replay':
-        return new ReplaySortCommand(comand, chatChannel);
-      case '!help':
-        return new HelpCommand(comand, chatChannel);
-      case '!swap':
-        return new SwapCommand(comand, chatChannel);
-      case '!setrank':
-        return new SetRankCommand(comand, chatChannel);
-      case '!move':
-        return new MoveCommand(comand, chatChannel);
-      default:
-        throw new Error('Unknown command type');
+  static createCommand(command: string, chatChannel: CommandMessage): Command {
+    const baseCommand = command.split(' ')[0].toLowerCase() as Commands;
+    const factoryEntry = commandRegistry[baseCommand];
+
+    if (!factoryEntry) {
+      throw new Error('Unknown command type');
     }
+
+    return factoryEntry(command, chatChannel);
   }
 }
 

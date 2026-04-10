@@ -1,0 +1,47 @@
+{
+  "sort": {
+    "title": "Balanced Match",
+    "teamField": "{{teamName}} (Rank {{score}})",
+    "footer": "Match ID: #{{sortId}} — Ready to deploy?",
+    "legacyDeprecated": "The legacy `!sort-old` command is deprecated. Use `/sort` or `!sort` instead."
+  },
+  "replay": {
+    "title": "Replay Match #{{index}}",
+    "footer": "Use `!go` to deploy the teams."
+  },
+  "go": {
+    "title": "Match Deployment",
+    "success": "Teams have been moved to their match channels. Good luck and have fun!"
+  },
+  "move": {
+    "title": "Move Player",
+    "success": "Moved **{{member}}** to **{{channel}}**."
+  },
+  "lobby": {
+    "title": "Lobby Update",
+    "success": "All players have been moved to **{{channel}}**."
+  },
+  "help": {
+    "title": "Available Commands",
+    "description": "Commands are grouped by category. Use `!help <command>` if you want more details about a specific command.",
+    "footer": "Dota Team Sorter"
+  },
+  "list": {
+    "registeredTitle": "Registered Players",
+    "onlineTitle": "Online Players"
+  },
+  "rank": {
+    "selectionTitle": "Rank Management",
+    "updatedTitle": "Rank Updated",
+    "updatedDescription": "Player **{{playerId}}** is now set to **{{rank}}**."
+  },
+  "slash": {
+    "sortDescription": "Create balanced teams from the currently connected players.",
+    "goDescription": "Move the current match teams into their configured voice channels.",
+    "lobbyDescription": "Move connected players back to the configured lobby channel.",
+    "setrankDescription": "Update a player's rank value.",
+    "setrankPlayerOption": "The Discord user whose rank should be updated.",
+    "setrankRankOption": "The new rank value to assign.",
+    "executedInChannel": "The result for {{command}} has been posted in this channel."
+  }
+}

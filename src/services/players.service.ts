@@ -1,67 +1,52 @@
-import { db } from '@src/db';
-import { config } from '@src/config';
-import PlayerInfo from '../types/playersInfo';
 import { GuildMember } from 'discord.js';
+import { appConfig } from '@src/config/app-config';
+import type { Player } from '@src/domain/models/Player';
+import type { PlayerRepository } from '@src/domain/ports/PlayerRepository';
+import MySqlPlayerRepository from '@src/infrastructure/persistence/MySqlPlayerRepository';
+import PlayerInfo from '../types/playersInfo';
+
+const playerRepository: PlayerRepository = new MySqlPlayerRepository();
+
+function toPlayerInfo(player: Player): PlayerInfo {
+  return {
+    dotaName: player.displayName,
+    rank: player.rank,
+    support: false,
+    tanque: false,
+    carry: false,
+  };
+}
+
+function toPlayerInfoMap(players: Player[]): Record<string, PlayerInfo> {
+  return Object.fromEntries(
+    players.map((player) => [player.id, toPlayerInfo(player)])
+  );
+}
 
 export async function getOrCreateAllPlayers(
   members: GuildMember[]
 ): Promise<Record<string, PlayerInfo>> {
-  const [rows] = await db.query(`SELECT * FROM \`${config.dbTable}\``);
-  const playerMap: Record<string, PlayerInfo> = {};
+  const storedPlayers = await playerRepository.getAll();
+  const playerMap = toPlayerInfoMap(storedPlayers);
+  const missingPlayers = members.filter(
+    (member) => !playerMap[member.user.username]
+  );
 
-  for (const row of rows as any[]) {
-    playerMap[row.id] = {
-      dotaName: row.dotaName,
-      rank: row.rank,
-      support: row.support,
-      tanque: row.tanque,
-      carry: row.carry,
-    };
-  }
+  for (const member of missingPlayers) {
+    const savedPlayer = await playerRepository.save({
+      id: member.user.username,
+      externalId: member.id,
+      displayName: member.user.username,
+      rank: appConfig.rank.defaultValue,
+    });
 
-  const missingPlayers = members.filter((m) => !playerMap[m.user.username]);
-
-  for (const member of missingPlayers as any[]) {
-    const id = member.user.username;
-    const newPlayer: PlayerInfo = {
-      dotaName: id,
-      rank: 1.5,
-      support: false,
-      tanque: false,
-      carry: false,
-    };
-
-    await db.query(
-      `INSERT INTO \`${config.dbTable}\` (id, dotaName, \`rank\`, support, tanque, carry) VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        newPlayer.dotaName,
-        newPlayer.rank,
-        newPlayer.support,
-        newPlayer.tanque,
-        newPlayer.carry,
-      ]
-    );
-
-    playerMap[id] = newPlayer;
+    playerMap[savedPlayer.id] = toPlayerInfo(savedPlayer);
   }
 
   return playerMap;
 }
 
 export async function getAllPlayers(): Promise<Record<string, PlayerInfo>> {
-  const [rows] = await db.query(`SELECT * FROM \`${config.dbTable}\``);
-
-  const playerMap: Record<string, PlayerInfo> = {};
-  for (const row of rows as any[]) {
-    playerMap[row.id] = {
-      dotaName: row.dotaName,
-      rank: row.rank,
-      support: row.support,
-      tanque: row.tanque,
-      carry: row.carry,
-    };
-  }
-
-  return playerMap;
+  const storedPlayers = await playerRepository.getAll();
+  return toPlayerInfoMap(storedPlayers);
 }

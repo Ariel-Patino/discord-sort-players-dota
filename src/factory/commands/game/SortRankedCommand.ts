@@ -1,109 +1,127 @@
-import Command from '../main/Command';
-import PlayerInfo from '@root/src/types/playersInfo';
-import { getOrCreateAllPlayers } from '@root/src/services/players.service';
-import { sort } from '@root/textSource.json';
-import { EmbedBuilder, GuildMember, VoiceChannel } from 'discord.js';
-import { setTeams } from '@src/state/teams';
+import { ChannelType, GuildMember, VoiceChannel } from 'discord.js';
+import SortPlayersUseCase from '@src/application/use-cases/SortPlayersUseCase';
+import { appConfig } from '@src/config/app-config';
+import type { Player } from '@src/domain/models/Player';
+import { t } from '@src/localization';
+import EmbedFactory from '@src/presentation/discord/embeds';
+import { setMatchSession } from '@src/state/teams';
 import { addSort } from '@src/store/sortHistory';
+import { getOrCreateAllPlayers } from '@root/src/services/players.service';
+import Command, { type CommandMessage } from '../main/Command';
 
 export default class SortRankedCommand extends Command {
-  constructor(command: string, chatChannel: any) {
+  private readonly sortPlayersUseCase = new SortPlayersUseCase();
+
+  constructor(command: string, chatChannel: CommandMessage) {
     super(command, chatChannel);
   }
 
   async execute(): Promise<void> {
     const guild = this.chatChannel.guild;
-
     const allVoiceMembers: GuildMember[] = [];
 
-    guild.channels.cache.forEach((channel: any) => {
-      if (channel.type === 2 && (channel as VoiceChannel).members?.size > 0) {
+    guild.channels.cache.forEach((channel) => {
+      if (channel.type === ChannelType.GuildVoice && channel.members.size > 0) {
         const voiceChannel = channel as VoiceChannel;
         allVoiceMembers.push(...voiceChannel.members.values());
       }
     });
 
     if (allVoiceMembers.length === 0) {
-      this.chatChannel.channel.send(sort.errors.errorMinPlayers);
+      await this.chatChannel.channel.send({
+        embeds: [EmbedFactory.warning(undefined, t('errors.insufficientPlayers'))],
+      });
       return;
     }
 
-    const players = await getOrCreateAllPlayers(allVoiceMembers);
+    const playersByUsername = await getOrCreateAllPlayers(allVoiceMembers);
+    const sortablePlayers: Player[] = allVoiceMembers
+      .map((member) => {
+        const username = member.user.username;
+        const playerInfo = playersByUsername[username];
 
-    const known = allVoiceMembers.filter((m) => players[m.user.username]);
+        if (!playerInfo) {
+          return null;
+        }
 
-    const shuffled = known.sort(() => Math.random() - 0.5);
+        return {
+          id: username,
+          externalId: member.id,
+          displayName: playerInfo.dotaName || member.displayName,
+          rank: Number(playerInfo.rank ?? 0),
+        };
+      })
+      .filter((player): player is Player => player !== null);
 
-    const applyNoise = Math.random() < 0.3;
-
-    const rankedMembers = shuffled.map((member) => {
-      const username = member.user.username;
-      const base = Number(players[username]?.rank ?? 0);
-      const noise = applyNoise ? (Math.random() - 0.5) * 0.2 : 0;
-      return {
-        username,
-        rank: base + noise,
-      };
+    const result = this.sortPlayersUseCase.execute(sortablePlayers, {
+      teamCount: 2,
+      noise: {
+        enabled: true,
+        applyChance: appConfig.sort.noise.applyChance,
+        amplitude: appConfig.sort.noise.amplitude,
+      },
     });
 
-    const team1: string[] = [];
-    const team2: string[] = [];
-    let score1 = 0;
-    let score2 = 0;
-    const maxSize1 = Math.ceil(rankedMembers.length / 2);
-    const maxSize2 = Math.floor(rankedMembers.length / 2);
+    const [primaryTeam, secondaryTeam] = result.teams;
+    const team1 = primaryTeam?.players ?? [];
+    const team2 = secondaryTeam?.players ?? [];
+    const score1 = primaryTeam?.score ?? 0;
+    const score2 = secondaryTeam?.score ?? 0;
+    const playersById = new Map(sortablePlayers.map((player) => [player.id, player]));
 
-    for (const player of rankedMembers) {
-      if (
-        team1.length < maxSize1 &&
-        (score1 <= score2 || team2.length >= maxSize2)
-      ) {
-        team1.push(player.username);
-        score1 += player.rank;
-      } else {
-        team2.push(player.username);
-        score2 += player.rank;
-      }
-    }
     const sortId = addSort({
+      sessionId: result.sessionId,
+      teams: result.teams,
       team1,
       team2,
       score1,
       score2,
-      timestamp: Date.now(),
+      timestamp: result.createdAt,
     });
 
     if (sortId === null) {
-      this.chatChannel.channel.send('Just Pick one, Fucking pussy!');
+      await this.chatChannel.channel.send({
+        embeds: [EmbedFactory.error(undefined, t('errors.sortHistoryLimitReached'))],
+      });
       return;
     }
 
-    const embed = new EmbedBuilder()
-      .setTitle('🔥 DOTITA 🔥')
-      .setColor(0xff0000)
-      .addFields(
-        {
-          name: `💀 Sentinel (Rank ${score1.toFixed(1).padStart(4, '0')}) 💀`,
-          value: this.formatTeam(team1, players),
-        },
-        {
-          name: `☠️ Scourge (Rank ${score2.toFixed(1).padStart(4, '0')}) ☠️`,
-          value: this.formatTeam(team2, players),
-        }
-      )
-      .setFooter({ text: `Sort ID: #${sortId} — GO?` });
+    const embed = EmbedFactory.match({
+      title: `🎮 ${t('commands.sort.title')}`,
+      footerText: t('commands.sort.footer', { sortId }),
+      teamA: {
+        name: primaryTeam?.teamName ?? t('common.teamAName'),
+        score: score1.toFixed(1).padStart(4, '0'),
+        players: this.formatTeam(team1, playersById),
+      },
+      teamB: {
+        name: secondaryTeam?.teamName ?? t('common.teamBName'),
+        score: score2.toFixed(1).padStart(4, '0'),
+        players: this.formatTeam(team2, playersById),
+      },
+    });
 
     this.chatChannel.channel.send({ embeds: [embed] });
-    setTeams(team1, team2);
+    setMatchSession({
+      sessionId: result.sessionId,
+      createdAt: result.createdAt,
+      teams: result.teams.map((team) => ({
+        ...team,
+        players: [...team.players],
+      })),
+    });
   }
 
-  private formatTeam(team: string[], players: Record<string, PlayerInfo>) {
-    return team
-      .map((username) => {
-        const info = players[username];
-        return info
-          ? `• ${info.dotaName} (R${info.rank})`
-          : `• ${username} (UNKNOWN)`;
+  private formatTeam(
+    teamPlayerIds: string[],
+    playersById: Map<string, Player>
+  ): string {
+    return teamPlayerIds
+      .map((playerId) => {
+        const player = playersById.get(playerId);
+        return player
+          ? `• ${player.displayName} (R${player.rank})`
+          : `• ${playerId} (${t('common.unknownPlayer')})`;
       })
       .join('\n');
   }

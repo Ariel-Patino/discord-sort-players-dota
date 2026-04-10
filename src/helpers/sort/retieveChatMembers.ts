@@ -1,8 +1,14 @@
-import * as l from '@root/textSource.json';
+import type { Collection, GuildMember, Message, Snowflake } from 'discord.js';
+import { t } from '@src/localization';
+import EmbedFactory from '@src/presentation/discord/embeds';
 
-const retieveChatMembers = (channel: any): any => {
+const retieveChatMembers = (
+  channel: Message<true>
+): Collection<Snowflake, GuildMember> | null => {
   if (!channel.member?.voice.channel) {
-    channel.reply(l.sort.errors.errorVoiceChannel);
+    channel.reply({
+      embeds: [EmbedFactory.warning(undefined, t('errors.voiceChannelRequired'))],
+    });
     return null;
   }
 
@@ -10,9 +16,12 @@ const retieveChatMembers = (channel: any): any => {
   const members = voiceChannel.members;
 
   if (members.size < 2) {
-    channel.reply(l.sort.errors.errorMinPlayers);
+    channel.reply({
+      embeds: [EmbedFactory.warning(undefined, t('errors.insufficientPlayers'))],
+    });
     return null;
   }
+
   return members;
 };
 

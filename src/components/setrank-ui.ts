@@ -4,27 +4,28 @@ import {
   ButtonStyle,
   StringSelectMenuBuilder,
 } from 'discord.js';
-import { getAllPlayers } from '@src/services/players.service';
+import { appConfig } from '@src/config/app-config';
+import type { Player } from '@src/domain/models/Player';
+import { t } from '@src/localization';
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = appConfig.pagination.setRankPageSize;
 
 export async function generateSetRankComponents(
   page: number,
-  senderId: string
+  senderId: string,
+  players: Player[]
 ) {
-  const players = await getAllPlayers();
-  const entries = Object.entries(players);
-  const totalPages = Math.ceil(entries.length / PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(players.length / PAGE_SIZE));
   const start = page * PAGE_SIZE;
-  const currentEntries = entries.slice(start, start + PAGE_SIZE);
+  const currentEntries = players.slice(start, start + PAGE_SIZE);
   const select = new StringSelectMenuBuilder()
     .setCustomId(`setrank_select_page_${page}_user_${senderId}`)
-    .setPlaceholder('Choose a player')
+    .setPlaceholder(t('interactions.rank.choosePlayer'))
     .addOptions(
-      currentEntries.map(([id, info]) => ({
-        label: info.dotaName,
-        description: `Username: ${id}`,
-        value: id,
+      currentEntries.map((player) => ({
+        label: player.displayName,
+        description: `Username: ${player.id}`,
+        value: player.id,
       }))
     );
 
@@ -43,7 +44,10 @@ export async function generateSetRankComponents(
   );
 
   return {
-    content: `📄 Page ${page + 1} of ${totalPages}`,
+    content: `📄 ${t('common.pageLabel', {
+      current: page + 1,
+      total: totalPages,
+    })}`,
     components: [
       new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select),
       buttonRow,

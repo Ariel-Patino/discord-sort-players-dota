@@ -1,0 +1,20 @@
+{
+  "voiceChannelRequired": "Connect to a voice channel before using this command.",
+  "insufficientPlayers": "At least two players are required to create balanced teams.",
+  "unauthorizedInteraction": "Only the user who started this interaction can complete it.",
+  "guildOnlyInteraction": "This interaction can only be used inside a server.",
+  "invalidCommand": "That command was not recognized. Use `!help` to see the available options.",
+  "missingLobbyChannel": "No lobby voice channel was found.",
+  "noPlayersToRegroup": "There are no players to move back to the lobby.",
+  "noConnectedUsers": "No connected users were found in voice channels.",
+  "moveFailed": "The move could not be completed.",
+  "sortRequiredBeforeGo": "Run `!sort` before using `!go`.",
+  "missingTeamChannels": "The team voice channels could not be found.",
+  "missingTeamChannelId": "No destination voice channel ID is configured for **{{teamName}}** ({{teamId}}).",
+  "invalidTeamChannelId": "The configured channel for **{{teamName}}** could not be found or is not a voice channel.",
+  "missingMovePermissions": "The bot does not have permission to move members into **{{channel}}**.",
+  "memberMoveFailed": "Could not move **{{player}}** into **{{channel}}**.",
+  "sortHistoryLimitReached": "No additional sort results can be stored right now.",
+  "nextStepLabel": "Next step:",
+  "genericUnknown": "An unexpected error occurred."
+}

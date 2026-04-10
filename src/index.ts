@@ -1,17 +1,12 @@
 import 'module-alias/register';
-import { assertRequiredConfig, config } from './config';
 import { Client, GatewayIntentBits } from 'discord.js';
-import isValidCommandType from './utils/commands';
+import Logger from '@src/infrastructure/logging/Logger';
+import { registerProcessErrorHandlers } from '@src/infrastructure/logging/process-hooks';
+import ErrorPresenter from '@src/presentation/discord/ErrorPresenter';
+import { assertRequiredConfig, config } from './config';
+import { handleInteractionCreate } from './app/events/interactionCreate';
 import CommandFactory from './factory/commands/main/CommandFactory';
-import { generateSetRankComponents } from '@root/src/components/setrank-ui';
-import { db } from '@src/db';
-import {
-  ModalBuilder,
-  ActionRowBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  EmbedBuilder,
-} from 'discord.js';
+import isValidCommandType from './utils/commands';
 
 const client = new Client({
   intents: [
@@ -22,104 +17,66 @@ const client = new Client({
   ],
 });
 
+registerProcessErrorHandlers({
+  commandName: 'process',
+});
+
 client.once('ready', () => {
-  console.log(`Bot ${client.user?.tag} is up!`);
+  Logger.info('Discord client is ready.', {
+    commandName: 'startup',
+    guildId: null,
+    userId: client.user?.id ?? null,
+    metadata: {
+      botTag: client.user?.tag ?? 'unknown',
+    },
+  });
 });
 
 client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
+  if (message.author.bot || !message.inGuild()) {
+    return;
+  }
 
   const [commandToken] = message.content.trim().split(' ');
   const baseCommand = commandToken.toLowerCase();
 
   if (isValidCommandType(baseCommand)) {
+    const logContext = {
+      commandName: baseCommand,
+      guildId: message.guild.id,
+      userId: message.author.id,
+    };
+
+    Logger.info('Executing prefix command.', {
+      ...logContext,
+      metadata: {
+        transport: 'prefix',
+      },
+    });
+
     try {
       const currentCommand = CommandFactory.createCommand(
         message.content,
         message
       );
       await currentCommand.execute();
+
+      Logger.info('Prefix command completed.', {
+        ...logContext,
+        metadata: {
+          transport: 'prefix',
+        },
+      });
     } catch (error) {
-      console.log(error);
-      message.channel.send('Wrong command. Use `!help` to see the available options.');
+      ErrorPresenter.log('messageCreate', error, logContext);
+      await message.channel.send({
+        embeds: [ErrorPresenter.present(error)],
+      });
     }
   }
 });
 
-client.on('interactionCreate', async (interaction) => {
-  if (
-    interaction.isStringSelectMenu() &&
-    interaction.customId.startsWith('setrank_select_page_')
-  ) {
-    const [, , , , , userId] = interaction.customId.split('_');
-    if (interaction.user.id !== userId) {
-      return await interaction.reply({
-        content: '❌ U need to have the power to change this.',
-        ephemeral: true,
-      });
-    }
-    const selectedId = interaction.values[0];
-
-    const modal = new ModalBuilder()
-      .setCustomId(`setrank_modal:${selectedId}`)
-      .setTitle('Nuevo Rank')
-      .addComponents(
-        new ActionRowBuilder<TextInputBuilder>().addComponents(
-          new TextInputBuilder()
-            .setCustomId('rank_value')
-            .setLabel('Nuevo rank (1.0 - 10.0)')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true)
-        )
-      );
-
-    await interaction.showModal(modal);
-  }
-
-  if (interaction.isButton() && interaction.customId.startsWith('setrank_')) {
-    const [_, direction, rawPage, __, userId] = interaction.customId.split('_');
-    if (interaction.user.id !== userId) {
-      return await interaction.reply({
-        content: '❌ U need to have the power to change this.',
-        ephemeral: true,
-      });
-    }
-    const currentPage = parseInt(rawPage);
-    const newPage = direction === 'next' ? currentPage + 1 : currentPage - 1;
-    const { components, content } = await generateSetRankComponents(
-      newPage,
-      userId
-    );
-    await interaction.update({ content, components });
-  }
-
-  if (
-    interaction.isModalSubmit() &&
-    interaction.customId.startsWith('setrank_modal:')
-  ) {
-    const selectedId = interaction.customId.split(':')[1];
-    const raw = interaction.fields.getTextInputValue('rank_value');
-    let rank = parseFloat(raw);
-    if (isNaN(rank)) rank = 1.5;
-    rank = Math.max(1.0, Math.min(10.0, rank));
-    rank = Math.round(rank * 10) / 10;
-
-    await db.query(`UPDATE \`${config.dbTable}\` SET \`rank\` = ? WHERE id = ?`, [
-      rank,
-      selectedId,
-    ]);
-
-    const embed = new EmbedBuilder()
-      .setColor(0x00ff00)
-      .setTitle('✅ Rank updated')
-      .setDescription(
-        `Player: **${selectedId}** is ranked with **${rank.toFixed(1)}**`
-      );
-
-    await interaction?.message?.delete();
-    await interaction.reply({ embeds: [embed], ephemeral: true });
-  }
-});
+client.on('interactionCreate', handleInteractionCreate);
 
 assertRequiredConfig();
 client.login(config.token);
