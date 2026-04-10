@@ -41,6 +41,9 @@ function normalizeSortRecord(record: StoredSortRecord): SortRecord {
       teams: record.teams.map((team) => ({
         ...team,
         players: [...team.players],
+        roleAssignments: team.roleAssignments?.map((assignment) => ({
+          ...assignment,
+        })),
       })),
       team1: record.team1 ?? [...(teamA?.players ?? [])],
       team2: record.team2 ?? [...(teamB?.players ?? [])],

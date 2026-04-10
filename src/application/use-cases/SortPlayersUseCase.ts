@@ -5,12 +5,17 @@ import {
   type BalanceTeamsOptions,
   type SortNoiseOptions,
 } from '@src/domain/services/BalanceTeamsService';
+import MatchRulesProvider from '@src/domain/services/MatchRulesProvider';
 
 export interface SortPlayersUseCaseOptions extends BalanceTeamsOptions {
   sessionIdFactory?: () => string;
 }
 
 export default class SortPlayersUseCase {
+  constructor(
+    private readonly matchRulesProvider = new MatchRulesProvider()
+  ) {}
+
   execute(
     players: Player[],
     options: SortPlayersUseCaseOptions = {}
@@ -24,17 +29,22 @@ export default class SortPlayersUseCase {
     const sessionIdFactory =
       options.sessionIdFactory ??
       (() => `sort-${createdAt}-${Math.floor(random() * 1_000_000)}`);
+    const normalizedTeamCount = Math.max(1, Math.floor(options.teamCount ?? 2));
+    const teamSize = Math.max(1, Math.floor(players.length / normalizedTeamCount));
+    const constraints = this.matchRulesProvider.getConstraintsForTeamSize(teamSize);
     const teams = balancePlayersIntoTeams(players, {
       noise: options.noise,
       random,
-      teamCount: options.teamCount,
+      teamCount: normalizedTeamCount,
       teamNames: options.teamNames,
+      constraints,
     });
 
     return {
       sessionId: sessionIdFactory(),
       createdAt,
       teams,
+      constraints,
     };
   }
 }

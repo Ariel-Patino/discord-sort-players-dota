@@ -201,7 +201,7 @@ That service:
 4. inserts missing players with default values:
    - `rank = 1.5`
    - `support = false`
-   - `tanque = false`
+   - `tank = false`
    - `carry = false`
 5. returns the merged player map
 
@@ -367,7 +367,7 @@ This is a **temporary interactive flow**: it exists only for the lifetime of the
 - `dotaName: string`
 - `rank: number`
 - `support: boolean`
-- `tanque: boolean`
+- `tank: boolean`
 - `carry: boolean`
 
 The same conceptual model is used:

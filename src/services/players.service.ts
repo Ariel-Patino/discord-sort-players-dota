@@ -1,6 +1,10 @@
 import { GuildMember } from 'discord.js';
 import { appConfig } from '@src/config/app-config';
-import type { Player } from '@src/domain/models/Player';
+import {
+  createDefaultPlayerAttributes,
+  normalizePlayerAttributes,
+  type Player,
+} from '@src/domain/models/Player';
 import type { PlayerRepository } from '@src/domain/ports/PlayerRepository';
 import MySqlPlayerRepository from '@src/infrastructure/persistence/MySqlPlayerRepository';
 import PlayerInfo from '../types/playersInfo';
@@ -11,9 +15,7 @@ function toPlayerInfo(player: Player): PlayerInfo {
   return {
     dotaName: player.displayName,
     rank: player.rank,
-    support: false,
-    tanque: false,
-    carry: false,
+    attributes: normalizePlayerAttributes(player.attributes),
   };
 }
 
@@ -38,6 +40,7 @@ export async function getOrCreateAllPlayers(
       externalId: member.id,
       displayName: member.user.username,
       rank: appConfig.rank.defaultValue,
+      attributes: createDefaultPlayerAttributes(),
     });
 
     playerMap[savedPlayer.id] = toPlayerInfo(savedPlayer);

@@ -159,7 +159,7 @@ or press `Ctrl + C`.
 If you want to add a new Discord user/player directly into the database, use:
 
 ```sql
-INSERT INTO players (id, dotaName, `rank`, support, tanque, carry)
+INSERT INTO players (id, dotaName, `rank`, support, tank, carry)
 VALUES ('new_player_123', 'NewPlayer', 3.5, 1, 0, 1);
 ```
 
@@ -169,13 +169,13 @@ VALUES ('new_player_123', 'NewPlayer', 3.5, 1, 0, 1);
 - `dotaName`: the display name for Dota
 - `rank`: numeric skill/rank value
 - `support`: `1` for true, `0` for false
-- `tanque`: `1` for true, `0` for false
+- `tank`: `1` for true, `0` for false
 - `carry`: `1` for true, `0` for false
 
 ### Example
 
 ```sql
-INSERT INTO players (id, dotaName, `rank`, support, tanque, carry)
+INSERT INTO players (id, dotaName, `rank`, support, tank, carry)
 VALUES ('sample.user', 'Sample', 4.0, 1, 0, 1);
 ```
 
@@ -203,7 +203,7 @@ WHERE id = 'sample.user';
 
 ```sql
 UPDATE players
-SET dotaName = 'Sample Pro', support = 0, tanque = 1, carry = 1
+SET dotaName = 'Sample Pro', support = 0, tank = 1, carry = 1
 WHERE id = 'sample.user';
 ```
 

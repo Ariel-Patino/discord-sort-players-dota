@@ -1,6 +1,7 @@
 import { getAllPlayers } from '@src/services/players.service';
 import { t } from '@src/localization';
 import EmbedFactory from '@src/presentation/discord/embeds';
+import { formatTeamPlayersFromRecord } from '@src/presentation/discord/team-player-list';
 import { setMatchSession } from '@src/state/teams';
 import { addSort, getAllSorts, getSort } from '@src/store/sortHistory';
 import PlayerInfo from '@src/types/playersInfo';
@@ -179,7 +180,7 @@ export default class SwapCommand extends Command {
             score: score1Formatted,
           }),
           score: score1Formatted,
-          players: this.formatTeam(team1, players),
+          players: formatTeamPlayersFromRecord(team1, players),
         },
         {
           name: t('commands.sort.teamField', {
@@ -187,7 +188,7 @@ export default class SwapCommand extends Command {
             score: score2Formatted,
           }),
           score: score2Formatted,
-          players: this.formatTeam(team2, players),
+          players: formatTeamPlayersFromRecord(team2, players),
         },
       ],
     });
@@ -219,15 +220,4 @@ export default class SwapCommand extends Command {
     return total;
   }
 
-
-  private formatTeam(teamUsernames: string[], players: Record<string, PlayerInfo>) {
-    return teamUsernames
-      .map((username, index) => {
-        const info = players[username];
-        return info
-          ? `   ${index + 1}. ${info.dotaName} (R${info.rank})`
-          : `   ${index + 1}. ${username} (${t('common.unknownPlayer')})`;
-      })
-      .join('\n');
-  }
 }

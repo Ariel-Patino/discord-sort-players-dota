@@ -1,6 +1,7 @@
 import { getAllPlayers } from '@src/services/players.service';
 import { t } from '@src/localization';
 import EmbedFactory from '@src/presentation/discord/embeds';
+import { formatTeamPlayersFromRecord } from '@src/presentation/discord/team-player-list';
 import { setMatchSession } from '@src/state/teams';
 import { getSort } from '@src/store/sortHistory';
 import PlayerInfo from '@src/types/playersInfo';
@@ -51,24 +52,11 @@ export default class ReplaySortCommand extends Command {
           score: Number(team.score).toFixed(1).padStart(4, '0'),
         }),
         score: Number(team.score).toFixed(1).padStart(4, '0'),
-        players: this.formatTeam(team.players, players),
+        players: formatTeamPlayersFromRecord(team.players, players),
       })),
     });
 
     this.chatChannel.channel.send({ embeds: [embed] });
   }
 
-  private formatTeam(
-    teamUsernames: string[],
-    players: Record<string, PlayerInfo>
-  ) {
-    return teamUsernames
-      .map((username, index) => {
-        const info = players[username];
-        return info
-          ? `   ${index + 1}. ${info.dotaName} (R${info.rank})`
-          : `   ${index + 1}. ${username} (${t('common.unknownPlayer')})`;
-      })
-      .join('\n');
-  }
 }

@@ -367,7 +367,7 @@ erDiagram
         string dotaName
         decimal rank
         boolean support
-        boolean tanque
+        boolean tank
         boolean carry
     }
 ```
@@ -377,7 +377,7 @@ erDiagram
 - `id` is the primary identifier used by the application to index player records.
 - `dotaName` is the display-oriented name used in embeds and list output.
 - `rank` is the balancing metric used by `SortRankedCommand`.
-- `support`, `tanque`, and `carry` exist as boolean role flags and are stored persistently even though the current balancing algorithm mainly relies on `rank`.
+- `support`, `tank`, and `carry` exist as boolean role flags and are stored persistently even though the current balancing algorithm mainly relies on `rank`.
 
 ## 6.2 Non-persistent runtime state
 

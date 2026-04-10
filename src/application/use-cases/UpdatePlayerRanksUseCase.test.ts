@@ -1,5 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
-import type { Player } from '@src/domain/models/Player';
+import {
+  createDefaultPlayerAttributes,
+  type Player,
+} from '@src/domain/models/Player';
 import type { PlayerRepository } from '@src/domain/ports/PlayerRepository';
 import { ValidationError } from '@src/shared/errors';
 import UpdatePlayerRanksUseCase from './UpdatePlayerRanksUseCase';
@@ -37,6 +40,7 @@ describe('UpdatePlayerRanksUseCase', () => {
         externalId: '1',
         displayName: 'Alice',
         rank: 1.2,
+        attributes: createDefaultPlayerAttributes(),
       },
     ]);
     const useCase = new UpdatePlayerRanksUseCase(repository);

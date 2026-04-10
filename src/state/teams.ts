@@ -1,8 +1,11 @@
+import type { TeamRoleAssignment } from '@src/domain/dto/SortResult';
+
 export interface TeamAssignment {
   teamId: string;
   teamName: string;
   players: string[];
   score: number;
+  roleAssignments?: TeamRoleAssignment[];
 }
 
 export interface MatchSession {
@@ -26,6 +29,9 @@ function cloneTeamAssignment(team: TeamAssignment): TeamAssignment {
   return {
     ...team,
     players: [...team.players],
+    roleAssignments: team.roleAssignments?.map((assignment) => ({
+      ...assignment,
+    })),
   };
 }
 
