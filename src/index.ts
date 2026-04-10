@@ -1,5 +1,5 @@
 import 'module-alias/register';
-import { token } from './config';
+import { assertRequiredConfig, config } from './config';
 import { Client, GatewayIntentBits } from 'discord.js';
 import isValidCommandType from './utils/commands';
 import CommandFactory from './factory/commands/main/CommandFactory';
@@ -41,7 +41,7 @@ client.on('messageCreate', async (message) => {
       await currentCommand.execute();
     } catch (error) {
       console.log(error);
-      message.channel.send('Wrong command. Get out bitch!!!');
+      message.channel.send('Wrong command. Use `!help` to see the available options.');
     }
   }
 });
@@ -104,7 +104,7 @@ client.on('interactionCreate', async (interaction) => {
     rank = Math.max(1.0, Math.min(10.0, rank));
     rank = Math.round(rank * 10) / 10;
 
-    await db.query('UPDATE players SET `rank` = ? WHERE id = ?', [
+    await db.query(`UPDATE \`${config.dbTable}\` SET \`rank\` = ? WHERE id = ?`, [
       rank,
       selectedId,
     ]);
@@ -121,4 +121,5 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-client.login(token);
+assertRequiredConfig();
+client.login(config.token);

@@ -1,8 +1,9 @@
-TOKEN={TOKEN FROM DISCORD}
-DB_HOST={localhost}
-DB_PORT={port}
-DB_USER={user}
-DB_PASSWORD={userpass}
-DB_NAME={game}
-DB_TABLE={players}
-DB_CONTAINER_NAME={game-mysql}
+TOKEN=your-discord-bot-token
+
+# Optional local overrides (the Docker stack already provides sane defaults)
+# DB_HOST=mysql
+# DB_PORT=3306
+# DB_USER=botuser
+# DB_PASSWORD=botpass
+# DB_NAME=game
+# DB_TABLE=players

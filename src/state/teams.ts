@@ -1,5 +1,3 @@
-import { GuildMember } from 'discord.js';
-
 let sentinelTeam: string[] = [];
 let scourgeTeam: string[] = [];
 

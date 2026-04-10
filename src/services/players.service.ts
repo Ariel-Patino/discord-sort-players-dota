@@ -1,11 +1,12 @@
 import { db } from '@src/db';
+import { config } from '@src/config';
 import PlayerInfo from '../types/playersInfo';
 import { GuildMember } from 'discord.js';
 
 export async function getOrCreateAllPlayers(
   members: GuildMember[]
 ): Promise<Record<string, PlayerInfo>> {
-  const [rows] = await db.query('SELECT * FROM players');
+  const [rows] = await db.query(`SELECT * FROM \`${config.dbTable}\``);
   const playerMap: Record<string, PlayerInfo> = {};
 
   for (const row of rows as any[]) {
@@ -31,7 +32,7 @@ export async function getOrCreateAllPlayers(
     };
 
     await db.query(
-      'INSERT INTO players (id, dotaName, `rank`, support, tanque, carry) VALUES (?, ?, ?, ?, ?, ?)',
+      `INSERT INTO \`${config.dbTable}\` (id, dotaName, \`rank\`, support, tanque, carry) VALUES (?, ?, ?, ?, ?, ?)`,
       [
         id,
         newPlayer.dotaName,
@@ -49,7 +50,7 @@ export async function getOrCreateAllPlayers(
 }
 
 export async function getAllPlayers(): Promise<Record<string, PlayerInfo>> {
-  const [rows] = await db.query('SELECT * FROM players');
+  const [rows] = await db.query(`SELECT * FROM \`${config.dbTable}\``);
 
   const playerMap: Record<string, PlayerInfo> = {};
   for (const row of rows as any[]) {

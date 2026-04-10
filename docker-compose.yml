@@ -1,17 +1,38 @@
-version: '3.8'
-
 services:
   mysql:
-    image: mysql:8
-    container_name: ${DB_CONTAINER_NAME}
-    restart: always
-    ports:
-      - '${DB_PORT}:3306'
+    image: mysql:8.4
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: game
+      MYSQL_USER: botuser
+      MYSQL_PASSWORD: botpass
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -uroot -prootpass --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
     volumes:
       - db_data:/var/lib/mysql
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      TOKEN: ${TOKEN:-}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: botuser
+      DB_PASSWORD: botpass
+      DB_NAME: game
+      DB_TABLE: players
+    command: ['./docker/start.sh']
 
 volumes:
   db_data:

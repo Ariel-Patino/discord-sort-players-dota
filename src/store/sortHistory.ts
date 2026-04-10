@@ -1,6 +1,4 @@
-import { GuildMember } from 'discord.js';
-
-interface SortRecord {
+export interface SortRecord {
   team1: string[];
   team2: string[];
   score1: number;

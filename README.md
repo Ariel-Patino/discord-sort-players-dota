@@ -1,51 +1,106 @@
-# Discord-sort-players-dota
+# Discord Sort Players Dota
 
-## Required node.js v20.14.0
+## Quick start with Docker
 
+This project now starts the full stack with a single command:
+
+```bash
+docker compose up --build
 ```
-node --version
+
+It will automatically:
+
+1. start MySQL
+2. wait until the database is healthy
+3. create the `players` table if it does not exist
+4. seed the initial players only on the first run
+5. start the Discord bot
+
+---
+
+## 1. Create `.env`
+
+### Windows
+
+```powershell
+Copy-Item ".env example" .env
 ```
 
-## Create the .env file
+### Linux / macOS
 
-### Linux:
-
-```
+```bash
 cp ".env example" .env
 ```
 
-### Windows:
+Then set your Discord bot token:
 
-```
-copy ".env example" .env
-```
-
-## Copy your token from the Discord app bot and paste it into the TOKEN variable in the .env file
-
-**_TOKEN="{TOKEN FROM DISCORD}"_**
-
-## Install dependencies
-
-```
-npm install
+```env
+TOKEN=your-discord-bot-token
 ```
 
-## Execute the app
+> The database settings are already managed by Docker for the default setup.
 
+---
+
+## 2. Start everything
+
+```bash
+docker compose up --build
 ```
+
+Or, if you prefer:
+
+```bash
 npm start
 ```
 
-## The console should display
+---
 
-**_Bot Sort# is up!_**
+## 3. What you should see
 
-## In the Discord voice channel, execute the following command
+The bot container should log something like:
 
+```text
+[bot] Initializing database if needed...
+Database initialized successfully with X players.
+Bot <tag> is up!
 ```
-!sort
+
+On later restarts, the seed is skipped automatically:
+
+```text
+Players table already initialized with N rows. Skipping seed.
 ```
 
-<div align="center">
-    All members in the voice call will be sorted into two teams, Sentinel and Scourge
-</div>
+---
+
+## Helpful commands
+
+```bash
+docker compose up --build
+docker compose down
+docker compose logs -f bot
+```
+
+Or via npm:
+
+```bash
+npm start
+npm run docker:down
+npm run docker:logs
+```
+
+---
+
+## Optional local development without Docker
+
+If you already have a MySQL instance running outside Docker, set the `DB_*` values in `.env` and use:
+
+```bash
+npm install
+npm run setup-db
+npm run dev
+```
+
+- `npm start` boots the full Docker stack
+- `npm run dev` starts only the bot process

@@ -6,33 +6,37 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "prepare": "husky",
-    "start": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start": "docker compose up --build",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start:bot": "ts-node --transpile-only src/index.ts",
     "test": "echo \"No test specified\" && exit 0",
-    "setup-db": "ts-node src/init-db.ts"
+    "setup-db": "ts-node --transpile-only src/init-db.ts",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f bot"
   },
   "keywords": [],
   "author": "Vulture255",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "eslint": "^9.4.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-prettier": "^5.1.3",
-    "husky": "^9.0.11",
-    "prettier": "^3.3.2",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
+    "prettier": "^3.8.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.4.5"
+    "typescript": "^6.0.2"
   },
   "dependencies": {
-    "@discordjs/rest": "^2.3.0",
-    "chalk": "^4.1.2",
-    "discord-api-types": "^0.37.89",
-    "discord.js": "^14.15.3",
-    "dotenv": "^16.4.5",
-    "module-alias": "^2.2.3",
-    "mysql2": "^3.14.1"
+    "@discordjs/rest": "^2.6.1",
+    "chalk": "^5.6.2",
+    "discord-api-types": "^0.38.45",
+    "discord.js": "^14.26.2",
+    "dotenv": "^17.4.1",
+    "module-alias": "^2.3.4",
+    "mysql2": "^3.21.1"
   },
   "_moduleAliases": {
     "@root": ".",
