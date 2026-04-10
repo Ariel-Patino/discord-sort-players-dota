@@ -72,8 +72,46 @@ export async function onSortCommand(
     })
     .filter((player): player is Player => player !== null);
 
+  const requestedTeamCount =
+    interaction.options.getInteger('teams') ?? appConfig.sort.teams.defaultCount;
+  const { minCount, maxCount } = appConfig.sort.teams;
+
+  if (
+    !Number.isInteger(requestedTeamCount) ||
+    requestedTeamCount < minCount ||
+    requestedTeamCount > maxCount
+  ) {
+    await interaction.editReply({
+      embeds: [
+        EmbedFactory.warning(
+          t('commands.sort.title'),
+          t('errors.invalidTeamCount', {
+            min: minCount,
+            max: maxCount,
+          })
+        ),
+      ],
+    });
+    return;
+  }
+
+  if (sortablePlayers.length < requestedTeamCount) {
+    await interaction.editReply({
+      embeds: [
+        EmbedFactory.warning(
+          t('commands.sort.title'),
+          t('errors.insufficientPlayersForTeamCount', {
+            teamCount: requestedTeamCount,
+            playerCount: sortablePlayers.length,
+          })
+        ),
+      ],
+    });
+    return;
+  }
+
   const result = sortPlayersUseCase.execute(sortablePlayers, {
-    teamCount: 2,
+    teamCount: requestedTeamCount,
     noise: {
       enabled: true,
       applyChance: appConfig.sort.noise.applyChance,
@@ -117,16 +155,18 @@ export async function onSortCommand(
   const embed = EmbedFactory.match({
     title: `🎮 ${t('commands.sort.title')}`,
     footerText: t('commands.sort.footer', { sortId }),
-    teamA: {
-      name: primaryTeam?.teamName ?? t('common.teamAName'),
-      score: score1.toFixed(1).padStart(4, '0'),
-      players: formatTeam(team1, playersById),
-    },
-    teamB: {
-      name: secondaryTeam?.teamName ?? t('common.teamBName'),
-      score: score2.toFixed(1).padStart(4, '0'),
-      players: formatTeam(team2, playersById),
-    },
+    description: t('commands.sort.summary', {
+      teamCount: result.teams.length,
+      playerCount: sortablePlayers.length,
+    }),
+    teams: result.teams.map((team) => ({
+      name: t('commands.sort.teamField', {
+        teamName: team.teamName,
+        score: team.score.toFixed(1).padStart(4, '0'),
+      }),
+      score: team.score.toFixed(1).padStart(4, '0'),
+      players: formatTeam(team.players, playersById),
+    })),
   });
 
   await interaction.editReply({ embeds: [embed] });

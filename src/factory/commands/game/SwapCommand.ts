@@ -62,6 +62,18 @@ export default class SwapCommand extends Command {
       return;
     }
 
+    if (lastSort.teams.length !== 2) {
+      this.chatChannel.channel.send({
+        embeds: [
+          EmbedFactory.warning(
+            t('commands.sort.title'),
+            t('errors.swapRequiresTwoTeams')
+          ),
+        ],
+      });
+      return;
+    }
+
     const team1 = [...lastSort.team1];
     const team2 = [...lastSort.team2];
 
@@ -146,14 +158,28 @@ export default class SwapCommand extends Command {
     const embed = EmbedFactory.match({
       title: `🎮 ${t('commands.sort.title')}`,
       footerText: t('commands.sort.footer', { sortId }),
-      teamA: {
-        score: score1Formatted,
-        players: this.formatTeam(team1, players),
-      },
-      teamB: {
-        score: score2Formatted,
-        players: this.formatTeam(team2, players),
-      },
+      description: t('commands.sort.summary', {
+        teamCount: 2,
+        playerCount: team1.length + team2.length,
+      }),
+      teams: [
+        {
+          name: t('commands.sort.teamField', {
+            teamName: t('common.teamAName'),
+            score: score1Formatted,
+          }),
+          score: score1Formatted,
+          players: this.formatTeam(team1, players),
+        },
+        {
+          name: t('commands.sort.teamField', {
+            teamName: t('common.teamBName'),
+            score: score2Formatted,
+          }),
+          score: score2Formatted,
+          players: this.formatTeam(team2, players),
+        },
+      ],
     });
 
     this.chatChannel.channel.send({ embeds: [embed] });

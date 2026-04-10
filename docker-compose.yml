@@ -24,8 +24,15 @@ services:
       mysql:
         condition: service_healthy
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       TOKEN: ${TOKEN:-}
+      DISCORD_APPLICATION_ID: ${DISCORD_APPLICATION_ID:-}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+      TEAM_1_CHANNEL_ID: ${TEAM_1_CHANNEL_ID:-}
+      TEAM_2_CHANNEL_ID: ${TEAM_2_CHANNEL_ID:-}
+      TEAM_CHANNEL_IDS_JSON: ${TEAM_CHANNEL_IDS_JSON:-}
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: botuser

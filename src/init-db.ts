@@ -1,3 +1,4 @@
+import 'module-alias/register';
 import Logger from '@src/infrastructure/logging/Logger';
 import { registerProcessErrorHandlers } from '@src/infrastructure/logging/process-hooks';
 import { db } from './db';

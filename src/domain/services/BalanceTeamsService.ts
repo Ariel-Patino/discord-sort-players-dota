@@ -33,6 +33,11 @@ export function balancePlayersIntoTeams(
 
   const random = options.random ?? Math.random;
   const teamCount = normalizeTeamCount(options.teamCount ?? 2);
+
+  if (players.length < teamCount) {
+    throw new Error('At least one player per team is required to generate a balanced match.');
+  }
+
   const shuffledPlayers = shufflePlayers(players, random);
   const rankedPlayers = applyNoise(shuffledPlayers, options.noise, random).sort(
     (left, right) => right.effectiveRank - left.effectiveRank

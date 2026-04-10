@@ -11,8 +11,9 @@ export interface MatchEmbedData {
   title?: string;
   description?: string;
   footerText?: string;
-  teamA: MatchEmbedTeamData;
-  teamB: MatchEmbedTeamData;
+  teams?: MatchEmbedTeamData[];
+  teamA?: MatchEmbedTeamData;
+  teamB?: MatchEmbedTeamData;
 }
 
 export default class EmbedFactory {
@@ -59,25 +60,25 @@ export default class EmbedFactory {
       this.COLORS.match
     );
 
+    const teams = data.teams ?? [data.teamA, data.teamB].filter(
+      (team): team is MatchEmbedTeamData => Boolean(team)
+    );
+
     embed.addFields(
-      {
+      teams.slice(0, 25).map((team, index) => ({
         name:
-          data.teamA.name ??
+          team.name ??
           t('commands.sort.teamField', {
-            teamName: t('common.teamAName'),
-            score: data.teamA.score,
+            teamName:
+              index === 0
+                ? t('common.teamAName')
+                : index === 1
+                  ? t('common.teamBName')
+                  : `Team ${index + 1}`,
+            score: team.score,
           }),
-        value: data.teamA.players || t('common.emptyValue'),
-      },
-      {
-        name:
-          data.teamB.name ??
-          t('commands.sort.teamField', {
-            teamName: t('common.teamBName'),
-            score: data.teamB.score,
-          }),
-        value: data.teamB.players || t('common.emptyValue'),
-      }
+        value: team.players || t('common.emptyValue'),
+      }))
     );
 
     if (data.footerText) {

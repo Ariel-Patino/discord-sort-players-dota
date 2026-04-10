@@ -1,6 +1,8 @@
 {
   "voiceChannelRequired": "Connect to a voice channel before using this command.",
   "insufficientPlayers": "At least two players are required to create balanced teams.",
+  "invalidTeamCount": "Choose a whole number of teams between **{{min}}** and **{{max}}**.",
+  "insufficientPlayersForTeamCount": "At least **{{teamCount}}** players are required to create **{{teamCount}}** teams. Only **{{playerCount}}** eligible players were found.",
   "unauthorizedInteraction": "Only the user who started this interaction can complete it.",
   "guildOnlyInteraction": "This interaction can only be used inside a server.",
   "invalidCommand": "That command was not recognized. Use `!help` to see the available options.",
@@ -14,6 +16,7 @@
   "invalidTeamChannelId": "The configured channel for **{{teamName}}** could not be found or is not a voice channel.",
   "missingMovePermissions": "The bot does not have permission to move members into **{{channel}}**.",
   "memberMoveFailed": "Could not move **{{player}}** into **{{channel}}**.",
+  "swapRequiresTwoTeams": "`!swap` is currently available only for two-team matches.",
   "sortHistoryLimitReached": "No additional sort results can be stored right now.",
   "nextStepLabel": "Next step:",
   "genericUnknown": "An unexpected error occurred."

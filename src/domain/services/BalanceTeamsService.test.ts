@@ -53,4 +53,13 @@ describe('balancePlayersIntoTeams', () => {
     expect(teams.every((team) => team.players.length === 2)).toBe(true);
     expect(scoreSpread(teams.map((team) => team.score))).toBe(0);
   });
+
+  it('rejects a team count larger than the number of players', () => {
+    expect(() =>
+      balancePlayersIntoTeams(createPlayers([10, 9, 8]), {
+        teamCount: 4,
+        random: () => 0.25,
+      })
+    ).toThrow('At least one player per team is required to generate a balanced match.');
+  });
 });

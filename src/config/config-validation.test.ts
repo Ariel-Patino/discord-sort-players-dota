@@ -1,7 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 import type { RuntimeConfig } from '@src/config';
 import { validateRuntimeConfig } from '@src/config';
-import { appConfig, type AppConfig, validateAppConfig } from './app-config';
+import {
+  appConfig,
+  readTeamChannelIdsFromEnv,
+  type AppConfig,
+  validateAppConfig,
+} from './app-config';
 
 const baseRuntimeConfig: RuntimeConfig = {
   token: 'token-value',
@@ -44,6 +49,38 @@ describe('validateAppConfig', () => {
     expect(() => validateAppConfig(invalidConfig)).toThrow(
       'Invalid rank configuration: rank.defaultValue must stay within the configured bounds.'
     );
+  });
+
+  it('rejects a default team count outside the configured range', () => {
+    const invalidConfig: AppConfig = {
+      ...appConfig,
+      sort: {
+        ...appConfig.sort,
+        teams: {
+          ...appConfig.sort.teams,
+          defaultCount: appConfig.sort.teams.maxCount + 1,
+        },
+      },
+    };
+
+    expect(() => validateAppConfig(invalidConfig)).toThrow(
+      'Invalid sort configuration: sort.teams.defaultCount must stay within the configured team-count range.'
+    );
+  });
+});
+
+describe('readTeamChannelIdsFromEnv', () => {
+  it('reads numbered team channel ids and JSON-based mappings', () => {
+    const channels = readTeamChannelIdsFromEnv({
+      TEAM_1_CHANNEL_ID: '111',
+      TEAM_3_CHANNEL_ID: '333',
+      TEAM_CHANNEL_IDS_JSON: '{"team-2":"222","4":"444"}',
+    });
+
+    expect(channels['team-1']).toBe('111');
+    expect(channels['team-2']).toBe('222');
+    expect(channels['team-3']).toBe('333');
+    expect(channels['team-4']).toBe('444');
   });
 });
 

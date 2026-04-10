@@ -17,11 +17,11 @@ export default class HelpCommand extends Command {
         {
           name: '🎲 Sorting & Swaps',
           value: [
-            '**`!sort`** – Sorts players into two balanced teams using rank + randomness.',
-            '**`/sort`** – Slash command version of the balanced team generator.',
+            '**`!sort [teams]`** – Sorts players into a configurable number of balanced teams (defaults to 2).',
+            '**`/sort teams:<n>`** – Slash command version of the balanced team generator.',
             '**`!sort-old`** – Deprecated legacy alias. Use `!sort` or `/sort` instead.',
-            '**`!sort-r`** – Same as `!sort`.',
-            '**`!swap`** – Swap or move players between Sentinel and Scourge using the last sort.',
+            '**`!sort-r [teams]`** – Same as `!sort`.',
+            '**`!swap`** – Swap or move players between teams for two-team matches.',
             '**`!replay <n>`** – Replays sort with ID `n` (e.g. `!replay 2`).',
           ].join('\n'),
         },

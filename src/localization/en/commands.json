@@ -2,6 +2,7 @@
   "sort": {
     "title": "Balanced Match",
     "teamField": "{{teamName}} (Rank {{score}})",
+    "summary": "Created **{{teamCount}}** balanced teams for **{{playerCount}}** players.",
     "footer": "Match ID: #{{sortId}} — Ready to deploy?",
     "legacyDeprecated": "The legacy `!sort-old` command is deprecated. Use `/sort` or `!sort` instead."
   },
@@ -37,6 +38,7 @@
   },
   "slash": {
     "sortDescription": "Create balanced teams from the currently connected players.",
+    "sortTeamsOption": "Optional number of teams to create (defaults to 2).",
     "goDescription": "Move the current match teams into their configured voice channels.",
     "lobbyDescription": "Move connected players back to the configured lobby channel.",
     "setrankDescription": "Update a player's rank value.",

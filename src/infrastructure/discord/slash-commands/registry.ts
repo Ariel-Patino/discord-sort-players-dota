@@ -5,7 +5,15 @@ import { t } from '@src/localization';
 const slashCommandBuilders = [
   new SlashCommandBuilder()
     .setName('sort')
-    .setDescription(t('commands.slash.sortDescription')),
+    .setDescription(t('commands.slash.sortDescription'))
+    .addIntegerOption((option) =>
+      option
+        .setName('teams')
+        .setDescription(t('commands.slash.sortTeamsOption'))
+        .setRequired(false)
+        .setMinValue(appConfig.sort.teams.minCount)
+        .setMaxValue(appConfig.sort.teams.maxCount)
+    ),
 
   new SlashCommandBuilder()
     .setName('go')

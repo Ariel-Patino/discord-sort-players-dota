@@ -57,9 +57,18 @@ Example:
 
 ```env
 TOKEN=your-discord-bot-token
+DISCORD_APPLICATION_ID=your-application-id
+DISCORD_GUILD_ID=your-guild-id
+TEAM_1_CHANNEL_ID=your-team-1-voice-channel-id
+TEAM_2_CHANNEL_ID=your-team-2-voice-channel-id
+TEAM_3_CHANNEL_ID=your-team-3-voice-channel-id
+TEAM_4_CHANNEL_ID=your-team-4-voice-channel-id
 ```
 
 For the default Docker workflow, database values are already supplied by `docker-compose.yml`.
+
+> For multi-team matches, add as many `TEAM_<n>_CHANNEL_ID` variables as needed (for example `TEAM_3_CHANNEL_ID`, `TEAM_4_CHANNEL_ID`, and so on).
+> You can also provide a JSON map through `TEAM_CHANNEL_IDS_JSON`, for example `{"team-1":"123","team-2":"456","team-3":"789"}`.
 
 ### 3. Start the full stack
 
@@ -81,6 +90,18 @@ This sequence will:
 3. initialize the `players` table if needed
 4. seed initial player data when the table is empty
 5. start the Discord bot process
+
+To create more than two teams during a match, use:
+
+```bash
+!sort 3
+```
+
+or the slash-command equivalent:
+
+```text
+/sort teams:3
+```
 
 ### 4. Useful operational commands
 

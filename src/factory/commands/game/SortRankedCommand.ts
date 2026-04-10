@@ -53,8 +53,14 @@ export default class SortRankedCommand extends Command {
       })
       .filter((player): player is Player => player !== null);
 
+    const requestedTeamCount = this.resolveTeamCount(sortablePlayers.length);
+
+    if (!requestedTeamCount) {
+      return;
+    }
+
     const result = this.sortPlayersUseCase.execute(sortablePlayers, {
-      teamCount: 2,
+      teamCount: requestedTeamCount,
       noise: {
         enabled: true,
         applyChance: appConfig.sort.noise.applyChance,
@@ -89,16 +95,18 @@ export default class SortRankedCommand extends Command {
     const embed = EmbedFactory.match({
       title: `🎮 ${t('commands.sort.title')}`,
       footerText: t('commands.sort.footer', { sortId }),
-      teamA: {
-        name: primaryTeam?.teamName ?? t('common.teamAName'),
-        score: score1.toFixed(1).padStart(4, '0'),
-        players: this.formatTeam(team1, playersById),
-      },
-      teamB: {
-        name: secondaryTeam?.teamName ?? t('common.teamBName'),
-        score: score2.toFixed(1).padStart(4, '0'),
-        players: this.formatTeam(team2, playersById),
-      },
+      description: t('commands.sort.summary', {
+        teamCount: result.teams.length,
+        playerCount: sortablePlayers.length,
+      }),
+      teams: result.teams.map((team) => ({
+        name: t('commands.sort.teamField', {
+          teamName: team.teamName,
+          score: team.score.toFixed(1).padStart(4, '0'),
+        }),
+        score: team.score.toFixed(1).padStart(4, '0'),
+        players: this.formatTeam(team.players, playersById),
+      })),
     });
 
     this.chatChannel.channel.send({ embeds: [embed] });
@@ -110,6 +118,49 @@ export default class SortRankedCommand extends Command {
         players: [...team.players],
       })),
     });
+  }
+
+  private resolveTeamCount(playerCount: number): number | null {
+    const rawTeamCount = this.command.trim().split(/\s+/)[1];
+    const {
+      defaultCount,
+      minCount,
+      maxCount,
+    } = appConfig.sort.teams;
+
+    const requestedCount = rawTeamCount ? Number(rawTeamCount) : defaultCount;
+
+    if (!Number.isInteger(requestedCount) || requestedCount < minCount || requestedCount > maxCount) {
+      this.chatChannel.channel.send({
+        embeds: [
+          EmbedFactory.warning(
+            t('commands.sort.title'),
+            t('errors.invalidTeamCount', {
+              min: minCount,
+              max: maxCount,
+            })
+          ),
+        ],
+      });
+      return null;
+    }
+
+    if (playerCount < requestedCount) {
+      this.chatChannel.channel.send({
+        embeds: [
+          EmbedFactory.warning(
+            t('commands.sort.title'),
+            t('errors.insufficientPlayersForTeamCount', {
+              teamCount: requestedCount,
+              playerCount,
+            })
+          ),
+        ],
+      });
+      return null;
+    }
+
+    return requestedCount;
   }
 
   private formatTeam(
