@@ -42,7 +42,7 @@ class InMemoryPlayerRepository implements PlayerRepository {
 }
 
 describe('UpdatePlayerAttributesUseCase', () => {
-  it('activates the requested role and stores the normalized proficiency', async () => {
+  it('activates arbitrary attributes and stores the normalized proficiency', async () => {
     const repository = new InMemoryPlayerRepository([
       {
         id: 'alice',
@@ -56,14 +56,14 @@ describe('UpdatePlayerAttributesUseCase', () => {
 
     const result = await useCase.execute({
       playerId: 'alice',
-      attributeName: 'carry',
+      attributeName: 'roamer',
       proficiencyInput: '84.6',
     });
 
-    expect(result.attributeName).toBe('carry');
+    expect(result.attributeName).toBe('roamer');
     expect(result.isActive).toBe(true);
     expect(result.proficiency).toBe(85);
-    expect((await repository.getById('alice'))?.attributes.carry).toEqual({
+    expect((await repository.getById('alice'))?.attributes.roamer).toEqual({
       isActive: true,
       proficiency: 85,
     });

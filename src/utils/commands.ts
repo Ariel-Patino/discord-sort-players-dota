@@ -10,7 +10,7 @@ const validCommands: Commands[] = [
   '!help',
   '!swap',
   '!setrank',
-  '!setrole',
+  '!setattribute',
   '!move',
 ];
 

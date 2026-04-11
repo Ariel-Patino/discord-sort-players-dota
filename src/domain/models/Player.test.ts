@@ -38,4 +38,19 @@ describe('Player attributes', () => {
     expect(attributes.carry).toEqual({ isActive: true, proficiency: 64 });
     expect(attributes.tank).toEqual({ isActive: false, proficiency: 64 });
   });
+
+  it('preserves arbitrary dynamic attributes without injecting unrelated defaults', () => {
+    const attributes = normalizePlayerAttributes({
+      roamer: { isActive: true, proficiency: 74.2 },
+      jungler: { isActive: false, proficiency: 12 },
+    });
+
+    expect(attributes).toEqual({
+      roamer: { isActive: true, proficiency: 74 },
+      jungler: { isActive: false, proficiency: 12 },
+    });
+    expect(attributes).not.toHaveProperty('support');
+    expect(attributes).not.toHaveProperty('tank');
+    expect(attributes).not.toHaveProperty('carry');
+  });
 });

@@ -4,6 +4,7 @@ import { t } from '@src/localization';
 import ErrorPresenter from '@src/presentation/discord/ErrorPresenter';
 import EmbedFactory from '@src/presentation/discord/embeds';
 import { onBulkMove } from '../interactions/onBulkMove';
+import { onBulkSetAttribute } from '../interactions/onBulkSetAttribute';
 import { onBulkSetRank } from '../interactions/onBulkSetRank';
 import { onRankSubmit } from '../interactions/modals/onRankSubmit';
 
@@ -44,6 +45,14 @@ export async function handleInteractionCreate(
       return;
     }
 
+    if (
+      interaction.isStringSelectMenu() &&
+      interaction.customId.startsWith('setattribute:')
+    ) {
+      await onBulkSetAttribute(interaction);
+      return;
+    }
+
     if (interaction.isButton() && interaction.customId.startsWith('move:')) {
       await onBulkMove(interaction);
       return;
@@ -55,10 +64,26 @@ export async function handleInteractionCreate(
     }
 
     if (
+      interaction.isButton() &&
+      interaction.customId.startsWith('setattribute:')
+    ) {
+      await onBulkSetAttribute(interaction);
+      return;
+    }
+
+    if (
       interaction.isModalSubmit() &&
       interaction.customId.startsWith('setrank:')
     ) {
       await onRankSubmit(interaction);
+      return;
+    }
+
+    if (
+      interaction.isModalSubmit() &&
+      interaction.customId.startsWith('setattribute:')
+    ) {
+      await onBulkSetAttribute(interaction);
       return;
     }
   } catch (error) {

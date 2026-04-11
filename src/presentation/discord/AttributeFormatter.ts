@@ -1,8 +1,11 @@
-import type { PlayerAttributes } from '@src/domain/models/Player';
+import type {
+  PlayerAttribute,
+  PlayerAttributes,
+} from '@src/domain/models/Player';
 
 const ATTRIBUTE_DISPLAY_ORDER = ['support', 'carry', 'tank'] as const;
 
-function toAttributeLabel(name: string): string {
+export function formatAttributeLabel(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
@@ -16,6 +19,20 @@ export function getAttributeStatusEmoji(proficiency: number): string {
   }
 
   return '❌';
+}
+
+export function formatAttributeStatus(
+  name: string,
+  attribute: PlayerAttribute,
+  hideWhenInactive = false
+): string {
+  const label = formatAttributeLabel(name);
+
+  if (!attribute.isActive || attribute.proficiency <= 0) {
+    return hideWhenInactive ? '' : `${label}: ❌ 0%`;
+  }
+
+  return `${label}: ${getAttributeStatusEmoji(attribute.proficiency)} ${attribute.proficiency}%`;
 }
 
 export function formatPlayerAttributes(attributes: PlayerAttributes): string {
@@ -32,10 +49,9 @@ export function formatPlayerAttributes(attributes: PlayerAttributes): string {
   ];
 
   return orderedEntries
-    .filter(([, attribute]) => attribute.isActive && attribute.proficiency > 0)
-    .map(([name, attribute]) => {
-      const label = toAttributeLabel(name);
-      return `${label}: ${getAttributeStatusEmoji(attribute.proficiency)} ${attribute.proficiency}%`;
-    })
+    .map(([name, attribute]) =>
+      formatAttributeStatus(name, attribute, true)
+    )
+    .filter(Boolean)
     .join(' | ');
 }

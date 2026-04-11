@@ -32,7 +32,7 @@ export default class UpdatePlayerAttributesUseCase {
 
     if (!playerId) {
       throw new ValidationError(
-        'A valid player profile is required before updating a role.',
+        'A valid player profile is required before updating an attribute.',
         'Try again after your player profile has been created.'
       );
     }
@@ -90,8 +90,8 @@ export default class UpdatePlayerAttributesUseCase {
       !/^[a-z][a-z0-9_-]{1,31}$/u.test(normalizedAttributeName)
     ) {
       throw new ValidationError(
-        'Enter a valid attribute name before saving your role.',
-        'Use a simple role name such as `carry`, `tank`, or `support`.'
+        'Enter a valid attribute name before saving.',
+        'Use a simple attribute name such as `carry`, `tank`, or `support`.'
       );
     }
 
@@ -106,14 +106,14 @@ export default class UpdatePlayerAttributesUseCase {
 
     if (!Number.isFinite(numericValue)) {
       throw new ValidationError(
-        'Enter a numeric role proficiency before saving.',
-        'Use a whole number between 0 and 100 (example: `!setrole carry 85`).'
+        'Enter a numeric attribute proficiency before saving.',
+        'Use a whole number between 0 and 100 (example: `!setattribute carry 85`).'
       );
     }
 
     if (numericValue < 0 || numericValue > 100) {
       throw new ValidationError(
-        'Role proficiency must stay between 0 and 100.',
+        'Attribute proficiency must stay between 0 and 100.',
         'Use a value inside the allowed range and try again.'
       );
     }

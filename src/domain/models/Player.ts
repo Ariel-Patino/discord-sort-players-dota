@@ -56,12 +56,16 @@ function normalizeSingleAttribute(rawAttribute: unknown): PlayerAttribute {
 }
 
 export function createDefaultPlayerAttributes(
-  defaultProficiency = DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY
+  defaultProficiency = DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY,
+  attributeKeys: readonly string[] = CORE_PLAYER_ATTRIBUTE_KEYS
 ): PlayerAttributes {
   const normalizedProficiency = normalizeAttributeProficiency(defaultProficiency);
+  const normalizedKeys = [...new Set(attributeKeys.map(normalizeAttributeKey))].filter(
+    Boolean
+  );
 
   return Object.fromEntries(
-    CORE_PLAYER_ATTRIBUTE_KEYS.map((key) => [
+    normalizedKeys.map((key) => [
       key,
       {
         isActive: false,
@@ -72,15 +76,22 @@ export function createDefaultPlayerAttributes(
 }
 
 export function buildPlayerAttributes(
-  activeFlags: Partial<Record<CorePlayerAttributeKey, boolean>> = {},
+  activeFlags: Partial<Record<string, boolean>> = {},
   defaultProficiency = DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY
 ): PlayerAttributes {
-  const attributes = createDefaultPlayerAttributes(defaultProficiency);
+  const attributeKeys = [...new Set([...CORE_PLAYER_ATTRIBUTE_KEYS, ...Object.keys(activeFlags)])];
+  const attributes = createDefaultPlayerAttributes(defaultProficiency, attributeKeys);
 
-  for (const key of CORE_PLAYER_ATTRIBUTE_KEYS) {
+  for (const [rawKey, rawValue] of Object.entries(activeFlags)) {
+    const key = normalizeAttributeKey(rawKey);
+
+    if (!key) {
+      continue;
+    }
+
     attributes[key] = {
       ...attributes[key],
-      isActive: Boolean(activeFlags[key]),
+      isActive: Boolean(rawValue),
     };
   }
 
@@ -95,13 +106,18 @@ export function normalizePlayerAttributes(
   rawAttributes: unknown,
   legacyFlags: Partial<Record<string, boolean | number | null | undefined>> = {}
 ): PlayerAttributes {
-  const normalizedAttributes = createDefaultPlayerAttributes();
+  const normalizedAttributes: PlayerAttributes = {};
 
   if (rawAttributes && typeof rawAttributes === 'object' && !Array.isArray(rawAttributes)) {
     for (const [rawKey, rawValue] of Object.entries(
       rawAttributes as Record<string, unknown>
     )) {
       const normalizedKey = normalizeAttributeKey(rawKey);
+
+      if (!normalizedKey) {
+        continue;
+      }
+
       normalizedAttributes[normalizedKey] = normalizeSingleAttribute(rawValue);
     }
   }
@@ -112,6 +128,11 @@ export function normalizePlayerAttributes(
     }
 
     const targetKey = normalizeAttributeKey(legacyKey);
+
+    if (!targetKey) {
+      continue;
+    }
+
     const existingAttribute = normalizedAttributes[targetKey];
     normalizedAttributes[targetKey] = {
       isActive: Boolean(rawFlag),
