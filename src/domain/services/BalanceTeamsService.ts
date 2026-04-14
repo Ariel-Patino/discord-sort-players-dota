@@ -3,7 +3,7 @@ import type {
   TeamRoleAssignment,
 } from '@src/domain/dto/SortResult';
 import type { Player } from '@src/domain/models/Player';
-import type { Constraint } from './MatchRulesProvider';
+import type { MatchConstraint } from './IMatchmakingStrategy';
 
 export interface SortNoiseOptions {
   enabled?: boolean;
@@ -16,7 +16,7 @@ export interface BalanceTeamsOptions {
   random?: () => number;
   teamCount?: number;
   teamNames?: string[];
-  constraints?: Constraint[];
+  constraints?: MatchConstraint[];
 }
 
 interface RankedPlayer {
@@ -93,7 +93,7 @@ function seedTeamsForConstraints(
   rankedPlayers: RankedPlayer[],
   teams: TeamBucket[],
   playersById: Map<string, Player>,
-  constraints: Constraint[],
+  constraints: MatchConstraint[],
   assignedPlayerIds: Set<string>,
   random: () => number
 ): void {
@@ -133,7 +133,7 @@ function seedTeamsForConstraints(
 function orderTeamsForConstraint(
   teams: TeamBucket[],
   playersById: Map<string, Player>,
-  constraint: Constraint,
+  constraint: MatchConstraint,
   random: () => number
 ): TeamBucket[] {
   const pendingTeams = teams.filter(
@@ -163,7 +163,7 @@ function orderTeamsForConstraint(
 function countConstraintMatchesInTeam(
   team: TeamBucket,
   playersById: Map<string, Player>,
-  constraint: Constraint
+  constraint: MatchConstraint
 ): number {
   return team.players.reduce((count, playerId) => {
     const player = playersById.get(playerId);
@@ -174,7 +174,7 @@ function countConstraintMatchesInTeam(
 function selectConstraintCandidate(
   rankedPlayers: RankedPlayer[],
   assignedPlayerIds: Set<string>,
-  constraint: Constraint
+  constraint: MatchConstraint
 ): ConstraintCandidate | null {
   let bestQualifiedCandidate: RankedPlayer | null = null;
   let bestFallbackCandidate: RankedPlayer | null = null;
@@ -232,12 +232,14 @@ function selectConstraintCandidate(
 function isBetterConstraintCandidate(
   candidate: RankedPlayer,
   currentBest: RankedPlayer,
-  constraint: Constraint
+  constraint: MatchConstraint
 ): boolean {
-  const candidateAttribute = candidate.player.attributes[constraint.attribute];
-  const currentAttribute = currentBest.player.attributes[constraint.attribute];
-  const candidateProficiency = Number(candidateAttribute?.proficiency ?? 0);
-  const currentProficiency = Number(currentAttribute?.proficiency ?? 0);
+  const candidateProficiency = Number(
+    candidate.player.attributes[constraint.attribute] ?? 0
+  );
+  const currentProficiency = Number(
+    currentBest.player.attributes[constraint.attribute] ?? 0
+  );
 
   return (
     candidateProficiency > currentProficiency ||
@@ -248,17 +250,17 @@ function isBetterConstraintCandidate(
   );
 }
 
-function playerMatchesConstraint(player: Player, constraint: Constraint): boolean {
-  const attribute = player.attributes[constraint.attribute];
+function playerMatchesConstraint(player: Player, constraint: MatchConstraint): boolean {
+  const attributeValue = Number(player.attributes[constraint.attribute] ?? 0);
 
-  return Boolean(attribute?.isActive) && attribute.proficiency > constraint.minProficiency;
+  return attributeValue > constraint.minProficiency;
 }
 
 function playerCanFallbackForConstraint(
   player: Player,
-  constraint: Constraint
+  constraint: MatchConstraint
 ): boolean {
-  return Boolean(player.attributes[constraint.attribute]?.isActive);
+  return Number(player.attributes[constraint.attribute] ?? 0) > 0;
 }
 
 function assignPlayerToTeam(team: TeamBucket, rankedPlayer: RankedPlayer): void {
@@ -269,7 +271,7 @@ function assignPlayerToTeam(team: TeamBucket, rankedPlayer: RankedPlayer): void 
 function recordRoleAssignment(
   team: TeamBucket,
   playerId: string,
-  constraint: Constraint,
+  constraint: MatchConstraint,
   usedFallback: boolean
 ): void {
   if (

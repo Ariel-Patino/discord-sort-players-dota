@@ -43,11 +43,11 @@ The implementation also exhibits these patterns:
 | Event ingress | `src/index.ts` | Receives Discord events and starts application flows |
 | Input validation | `src/utils/commands.ts`, `src/types/commands.ts` | Validates supported command tokens |
 | Routing and orchestration | `src/factory/commands/main/CommandFactory.ts` | Maps validated command text to concrete handlers |
-| Application use cases | `src/factory/commands/game/**`, `src/factory/commands/players/**`, `src/factory/commands/main/HelpCommand.ts` | Implements sorting, replay, swapping, listing, movement, and rank management logic |
-| UI composition | `src/components/setrank-ui.ts`, `src/components/move-ui.ts` | Builds Discord select menus, buttons, and modal-related UI structures |
+| Application use cases | `src/factory/commands/game/**`, `src/factory/commands/players/**`, `src/factory/commands/main/HelpCommand.ts`, `src/application/use-cases/**` | Implements sorting, replay, swapping, listing, movement, rank management, and attribute updates |
+| UI composition | `src/components/setrank-ui.ts`, `src/components/setattribute-ui.ts`, `src/components/move-ui.ts` | Builds Discord select menus, buttons, and modal-related UI structures |
 | Service / data access | `src/services/players.service.ts` | Reads player records, auto-creates missing rows, and exposes DB-backed lookup operations |
 | Runtime state | `src/state/teams.ts`, `src/store/sortHistory.ts` | Holds transient active-team and sort-history state during process lifetime |
-| Seed and static data | `src/store/players.ts`, `textSource.json` | Supplies initial player seed data and reusable text assets |
+| Seed and static data | `seeds/*.json`, `src/localization/**`, `textSource.json` | Supplies initial player seed data and localized user-facing text; `textSource.json` is legacy content |
 | Infrastructure | `src/config.ts`, `src/db.ts`, `src/init-db.ts`, `docker/start.sh`, `Dockerfile`, `docker-compose.yml` | Configuration loading, DB pool creation, schema bootstrapping, and containerized startup |
 
 ### Important constraint
@@ -109,7 +109,7 @@ The following diagram focuses on code-level module relationships inside the bot 
 flowchart LR
     subgraph Ingress["Ingress / Event Layer"]
         M["`messageCreate`"]
-        I["`interactionCreate`"]
+        I["`interactionCreate`<br/>prefix-only interaction router"]
     end
 
     subgraph Orchestration["Orchestration Layer"]
@@ -122,17 +122,17 @@ flowchart LR
     subgraph UseCases["Application Use Cases"]
         SORT["Sort / Replay / Swap"]
         VOICE["Go / Lobby / Move"]
-        PLAYER["List / SetRank / Help"]
+        PLAYER["List / SetRank / SetAttribute / Help"]
     end
 
     subgraph Support["Support Modules"]
-        UI["UI builders<br/>`setrank-ui.ts`, `move-ui.ts`"]
+        UI["UI builders<br/>`setrank-ui.ts`, `setattribute-ui.ts`, `move-ui.ts`"]
         HELPER["Voice member helper<br/>`retieveChatMembers.ts`"]
         SERVICE["`players.service.ts`"]
         TEAMS["`teams.ts`"]
         HISTORY["`sortHistory.ts`"]
         SEED["`players.ts`"]
-        TEXT["`textSource.json`"]
+        TEXT["Localization<br/>`src/localization/**`"]
     end
 
     subgraph Infra["Infrastructure"]
@@ -173,6 +173,7 @@ flowchart LR
 - The command classes serve as the main application boundary for domain operations.
 - `players.service.ts` is the only shared DB-access abstraction currently used across multiple commands.
 - UI builders are isolated from business logic, which simplifies interactive flow generation.
+- Chat-input slash commands are wired through `interactionCreate`, but the current runtime rejects them in favor of prefix commands.
 
 ---
 
@@ -201,7 +202,7 @@ sequenceDiagram
     Init->>DB: `CREATE TABLE IF NOT EXISTS players (...)`
     Init->>DB: `SELECT COUNT(*) AS total FROM players`
     alt Table is empty
-        Init->>DB: Insert seed rows from `src/store/players.ts`
+        Init->>DB: Insert seed rows from the configured `seeds/*.json` file
     else Table already contains rows
         Init-->>Start: Skip seed step
     end
@@ -253,10 +254,11 @@ sequenceDiagram
         end
         DB-->>Service: Player rows
         Service-->>SortCmd: `Record<string, PlayerInfo>`
-        SortCmd->>SortCmd: Shuffle members and compute balanced teams
-        SortCmd->>History: `addSort({team1, team2, score1, score2, timestamp})`
+        SortCmd->>SortCmd: Resolve team count and voice-channel labels
+        SortCmd->>SortCmd: Build constrained balanced teams through `SortPlayersUseCase`
+        SortCmd->>History: `addSort({sessionId, teams, timestamp})`
         History-->>SortCmd: `sortId`
-        SortCmd->>Teams: `setTeams(team1, team2)`
+        SortCmd->>Teams: `setMatchSession({sessionId, createdAt, teams})`
         SortCmd-->>Discord: Send embed with teams and scores
     end
 ```
@@ -333,12 +335,15 @@ sequenceDiagram
     App->>Factory: `createCommand(...)`
     Factory-->>App: `GoCommand`
     App->>GoCmd: `execute()`
-    GoCmd->>Teams: `getTeams()`
+    GoCmd->>Teams: `getMatchSession()`
     alt No active teams available
         GoCmd-->>Discord: Send warning that `!sort` is required first
     else Teams exist
-        GoCmd->>Guild: Find `sentinel`/`radiant` and `scourge`/`dire` channels
-        loop For each username in both active teams
+        loop For each active team
+            GoCmd->>GoCmd: Resolve configured team channel ID from `appConfig.channels.teamChannelIds`
+            GoCmd->>Guild: Resolve target voice channel and permissions
+        end
+        loop For each player ID in each team
             GoCmd->>Guild: Resolve member by username
             GoCmd->>Voice: `member.voice.setChannel(targetChannel)`
         end
@@ -366,9 +371,7 @@ erDiagram
         string id PK
         string dotaName
         decimal rank
-        boolean support
-        boolean tank
-        boolean carry
+        json attributes
     }
 ```
 
@@ -377,7 +380,8 @@ erDiagram
 - `id` is the primary identifier used by the application to index player records.
 - `dotaName` is the display-oriented name used in embeds and list output.
 - `rank` is the balancing metric used by `SortRankedCommand`.
-- `support`, `tank`, and `carry` exist as boolean role flags and are stored persistently even though the current balancing algorithm mainly relies on `rank`.
+- `attributes` stores role metadata such as `support`, `tank`, and `carry` as numeric proficiency values from `0` to `100`.
+- The current balancing algorithm still optimizes by score, but it also seeds teams with role constraints from `src/config/gameRules.ts` when team sizes require them.
 
 ## 6.2 Non-persistent runtime state
 
@@ -385,9 +389,9 @@ Not all operational data is stored in MySQL.
 
 | Runtime store | File | Purpose | Persistence |
 |---|---|---|---|
-| Active teams | `src/state/teams.ts` | Holds the currently selected Sentinel and Scourge rosters | In-memory only |
+| Active match session | `src/state/teams.ts` | Holds the currently active `MatchSession` with dynamic `teams[]` data | In-memory only |
 | Sort history | `src/store/sortHistory.ts` | Keeps up to 35 prior sort results for replay and swap | In-memory only |
-| Seed player dataset | `src/store/players.ts` | Initial bootstrap source for first-time DB seeding | Source-controlled static file |
+| Seed player dataset | `seeds/example.players.json` | Initial bootstrap source for first-time DB seeding | Source-controlled static file |
 
 This separation means the application combines **persistent player metadata** with **ephemeral session orchestration state**.
 

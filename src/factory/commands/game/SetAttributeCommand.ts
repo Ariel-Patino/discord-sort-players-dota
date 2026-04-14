@@ -7,7 +7,6 @@ import UpdatePlayerAttributesUseCase from '@src/application/use-cases/UpdatePlay
 import { buildSetAttributeComponents, buildSetAttributePrompt } from '@src/components/setattribute-ui';
 import { appConfig } from '@src/config/app-config';
 import {
-  createDefaultPlayerAttributes,
   type Player,
 } from '@src/domain/models/Player';
 import type { PlayerRepository } from '@src/domain/ports/PlayerRepository';
@@ -120,7 +119,7 @@ export default class SetAttributeCommand extends Command {
         externalId: this.chatChannel.author.id,
         displayName,
         rank: appConfig.rank.defaultValue,
-        attributes: createDefaultPlayerAttributes(),
+        attributes: {},
       };
 
       await playerRepository.save(newPlayer);

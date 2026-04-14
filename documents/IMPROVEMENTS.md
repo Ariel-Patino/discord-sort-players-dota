@@ -2,6 +2,8 @@
 
 _Comprehensive refactoring and improvement roadmap for the Discord Game Bot codebase, with emphasis on architectural decoupling, configuration hygiene, maintainability, and long-term open-source sustainability._
 
+_Status note (2026-04-13): this document remains a roadmap, not a literal snapshot. Several recommendations below have already been implemented in the codebase, including typed app configuration, localized user-facing strings, repository-backed player updates, and configured team-channel deployment._
+
 ## 1. Executive Summary
 
 The current repository is functional and relatively compact, but the implementation is tightly centered on the Discord runtime and contains several forms of operational hardcoding. This is acceptable for a small, single-purpose bot, but it limits reuse, testability, multi-server adaptability, and long-term maintainability.
@@ -23,11 +25,11 @@ For an MIT-licensed open-source project, the recommended direction is to evolve 
 | Area | Current State | Risk / Cost | Improvement Priority |
 |---|---|---|---|
 | Discord coupling | Commands import and manipulate Discord-specific objects directly | High impact on testability and reuse | High |
-| Hardcoded operational rules | Channel names, rank bounds, page size, timeouts, and score noise are embedded in source files | High impact on portability and maintainability | High |
+| Hardcoded operational rules | Some operational rules have moved into typed config, but Discord-specific assumptions still remain in command orchestration | Medium impact on portability and maintainability | High |
 | Command model | Prefix parsing through `messageCreate` and `CommandFactory` | Medium impact on UX and long-term Discord compatibility | High |
 | Runtime state | Teams and sort history are in-memory only | Medium impact on resilience and multi-instance support | Medium |
-| Type safety | Widespread use of `any` in command and event code | Medium impact on correctness and refactoring speed | High |
-| Persistence abstraction | SQL is partially centralized but still leaks into event handling (`src/index.ts`) | Medium impact on cohesion and layering | High |
+| Type safety | Stronger than earlier revisions, but transport-neutral boundaries are still incomplete | Medium impact on correctness and refactoring speed | Medium |
+| Persistence abstraction | Persistence is now mostly routed through repositories and use cases, but command-side orchestration is still close to infrastructure | Medium impact on cohesion and layering | High |
 | Testability | No clear domain boundary for unit testing pure game behavior | High impact on quality confidence | High |
 
 ---
@@ -42,12 +44,12 @@ The current codebase mixes Discord transport concerns and application logic in s
 
 | File | Coupling Pattern | Observation |
 |---|---|---|
-| `src/index.ts` | Event orchestration + modal parsing + direct SQL update | The application entry point contains both transport handling and business update logic for rank management |
+| `src/index.ts` | Event orchestration and prefix-command ingress | The entry point is thinner than earlier revisions, but it still owns transport bootstrapping and prefix routing |
 | `src/factory/commands/main/Command.ts` | `chatChannel: any` injected into all commands | The command abstraction is tied to the Discord message context instead of a transport-neutral request object |
-| `src/factory/commands/game/SortRankedCommand.ts` | Uses `GuildMember`, `VoiceChannel`, `EmbedBuilder`, and channel sends directly | Team balancing logic is not isolated from Discord-side data access and response rendering |
+| `src/factory/commands/game/SortRankedCommand.ts` | Uses `GuildMember`, `VoiceChannel`, and channel sends directly | Team balancing orchestration is still not fully isolated from Discord-side data access and response rendering |
 | `src/factory/commands/game/GoCommand.ts` | Direct voice-channel lookup and `member.voice.setChannel()` | The domain action "deploy teams" is implemented as Discord-specific side effects |
 | `src/factory/commands/game/MoveCommand.ts` | Message component collector and UI state are embedded inside the command | Transport/UI orchestration and use-case behavior are not separated |
-| `src/factory/commands/game/SetRankCommand.ts` + `src/index.ts` | UI creation and modal processing depend on Discord `customId` conventions | Application flow relies on Discord-specific identifier encoding |
+| `src/factory/commands/game/SetRankCommand.ts` + interaction handlers | UI creation and modal processing depend on Discord `customId` conventions | Application flow relies on Discord-specific identifier encoding |
 | `src/helpers/sort/retieveChatMembers.ts` | Uses `channel.reply()` internally | Even helpers perform transport-level output instead of returning structured errors |
 
 ### Practical effect of the current coupling
@@ -194,19 +196,19 @@ The following values are currently embedded directly in source files and should 
 
 | Category | Hardcoded Value / Rule | File(s) | Risk |
 |---|---|---|---|
-| Team channel names | `sentinel`, `radiant`, `scourge`, `dire` | `src/factory/commands/game/GoCommand.ts` | Prevents flexible channel naming or multi-guild deployment |
+| Team channel mapping | Resolved through configured team IDs and environment variables | `src/config/app-config.ts`, `src/factory/commands/game/GoCommand.ts` | Improved, but still lacks per-guild persistence |
 | Lobby channel rule | `lobby` name match | `src/factory/commands/game/RegroupCommand.ts` | Assumes one naming convention |
-| Rank defaults | `1.5` | `src/index.ts`, `src/services/players.service.ts`, `src/store/players.ts` | Hard to tune and inconsistent if changed in one location only |
-| Rank bounds | `1.0` to `10.0` | `src/index.ts` | Business rule is embedded in modal handling logic |
-| Rank precision | `Math.round(rank * 10) / 10` | `src/index.ts` | Formatting and domain validation are coupled |
-| Sorting randomness | `Math.random() < 0.3` and noise amplitude `0.2` | `src/factory/commands/game/SortRankedCommand.ts` | Balancing policy is not configurable |
-| Pagination size | `PAGE_SIZE = 25` | `src/components/setrank-ui.ts` | UI behavior is static |
-| Interaction timeout | `60000` milliseconds | `src/factory/commands/game/MoveCommand.ts` | Timeout cannot be tuned per deployment |
-| History size | `MAX_SORTS = 35` | `src/store/sortHistory.ts` | Session behavior is fixed in source code |
+| Rank defaults | `1.5` | `src/config/app-config.ts`, `src/services/players.service.ts`, `seeds/*.json` | Centralized, but still global rather than guild-specific |
+| Rank bounds | `0.1` to `10.0` | `src/config/app-config.ts` | Configured globally rather than per guild |
+| Rank precision | `0.01` step | `src/config/app-config.ts` | Centralized but not yet a domain value object |
+| Sorting randomness | apply chance `0.3` and amplitude `0.2` | `src/config/app-config.ts` | Configurable, but only at app scope |
+| Pagination size | page size `25` | `src/config/app-config.ts` | Centralized but static per deployment |
+| Interaction timeout | `60000` milliseconds | `src/config/app-config.ts`, `src/factory/commands/game/MoveCommand.ts` | Only partially generalized |
+| History size | `35` | `src/config/app-config.ts`, `src/store/sortHistory.ts` | Centralized but in-memory only |
 | DB defaults | host `mysql`, port `3306`, user `botuser`, password `botpass`, DB `game`, table `players` | `src/config.ts` | Suitable for local Docker, but should be clearly modeled as environment configuration |
 | Connection pool size | `connectionLimit: 10` | `src/db.ts` | Operational tuning is not environment-specific |
-| Voice channel type checks | `c.type === 2` | multiple command files | Uses a raw numeric constant instead of a named enum and couples behavior to Discord implementation detail |
-| Static seed players | Entire `src/store/players.ts` dataset | `src/store/players.ts` | Seed data is embedded in application code instead of a seed source or admin flow |
+| Voice channel type checks | `ChannelType.GuildVoice` | multiple command files | Improved, but still Discord-specific in command implementations |
+| Static seed players | Example JSON files under `seeds/` | `seeds/*.json` | Better than embedding in TypeScript, but still a static seed source rather than an admin flow |
 
 ## 4.2 Recommended configuration model
 
@@ -340,12 +342,12 @@ This is functional but represents an older Discord bot interaction style.
 
 | Observation | Evidence | Recommended Action |
 |---|---|---|
-| Legacy command retained | `!sort-old` in `CommandFactory` and `types/commands.ts` | Mark as deprecated and remove after migration window |
-| Manual switch-based dispatch | `src/factory/commands/main/CommandFactory.ts` | Replace with a command registry keyed by command name |
+| Prefix-first command UX | `src/index.ts` and `src/app/events/interactionCreate.ts` | Decide whether prefix mode remains permanent or whether slash commands should be enabled |
+| Command registry already improved | `src/factory/commands/main/CommandFactory.ts` | Keep the registry pattern and continue extracting behavior from command classes |
 | Prefix-only command UX | `src/index.ts` `messageCreate` flow | Introduce slash commands as the primary interface |
 | Monolithic interaction handler | `src/index.ts` handles select menus, buttons, and modal submit logic | Split by interaction type or feature area |
 | Widespread `any` usage | `Command`, multiple command files, collector handlers | Replace with explicit types and DTOs |
-| Direct SQL in entry point | `src/index.ts` updates rank directly | Move DB write into an application service/use case |
+| Interaction routing can split further | `src/app/events/interactionCreate.ts` routes multiple feature areas | Continue decomposing interactions by feature while keeping the shared error boundary |
 
 ## 6.2 Slash command migration path
 
@@ -359,7 +361,7 @@ A practical migration plan should avoid a single disruptive rewrite.
 
 Examples:
 - `/sort`
-- `/swap sentinel_position:1 scourge_position:2`
+- `/swap team_one_position:1 team_two_position:2`
 - `/go`
 - `/lobby`
 - `/setrank player:<user> rank:<number>`
@@ -377,7 +379,6 @@ This means both prefix and slash handlers call the same application service.
 ### Phase C: Deprecation and removal
 
 After slash commands are stable:
-- deprecate `!sort-old`
 - deprecate the legacy prefix parser if no longer needed
 - reduce `messageCreate` command handling to compatibility mode or remove it entirely
 
@@ -455,7 +456,6 @@ The repository already contains `textSource.json`, but many messages remain inli
 Scope:
 - remove inline magic numbers into named config constants
 - replace raw `any` with concrete Discord types where possible
-- move direct SQL rank updates out of `src/index.ts`
 - centralize repeated response text
 
 Expected outcome:
@@ -490,7 +490,6 @@ Expected outcome:
 Scope:
 - add slash command support
 - split event handlers by feature
-- deprecate `!sort-old`
 - optionally retire prefix commands after compatibility period
 
 Expected outcome:

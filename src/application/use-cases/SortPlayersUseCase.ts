@@ -1,19 +1,20 @@
 import type { SortResult } from '@src/domain/dto/SortResult';
 import type { Player } from '@src/domain/models/Player';
-import {
-  balancePlayersIntoTeams,
-  type BalanceTeamsOptions,
-  type SortNoiseOptions,
-} from '@src/domain/services/BalanceTeamsService';
-import MatchRulesProvider from '@src/domain/services/MatchRulesProvider';
+import { activeMatchmakingStrategy } from '@src/config/matchmaking-strategy';
+import type {
+  IMatchmakingStrategy,
+  MatchmakingNoiseOptions,
+  MatchmakingStrategyOptions,
+} from '@src/domain/services/IMatchmakingStrategy';
 
-export interface SortPlayersUseCaseOptions extends BalanceTeamsOptions {
+export interface SortPlayersUseCaseOptions extends MatchmakingStrategyOptions {
   sessionIdFactory?: () => string;
 }
 
 export default class SortPlayersUseCase {
   constructor(
-    private readonly matchRulesProvider = new MatchRulesProvider()
+    private readonly matchmakingStrategy: IMatchmakingStrategy =
+      activeMatchmakingStrategy
   ) {}
 
   execute(
@@ -29,24 +30,20 @@ export default class SortPlayersUseCase {
     const sessionIdFactory =
       options.sessionIdFactory ??
       (() => `sort-${createdAt}-${Math.floor(random() * 1_000_000)}`);
-    const normalizedTeamCount = Math.max(1, Math.floor(options.teamCount ?? 2));
-    const teamSize = Math.max(1, Math.floor(players.length / normalizedTeamCount));
-    const constraints = this.matchRulesProvider.getConstraintsForTeamSize(teamSize);
-    const teams = balancePlayersIntoTeams(players, {
+    const matchmakingResult = this.matchmakingStrategy.calculateTeamBalance(players, {
       noise: options.noise,
       random,
-      teamCount: normalizedTeamCount,
+      teamCount: options.teamCount,
       teamNames: options.teamNames,
-      constraints,
     });
 
     return {
       sessionId: sessionIdFactory(),
       createdAt,
-      teams,
-      constraints,
+      teams: matchmakingResult.teams,
+      constraints: matchmakingResult.constraints,
     };
   }
 }
 
-export type { SortNoiseOptions };
+export type { MatchmakingNoiseOptions as SortNoiseOptions };

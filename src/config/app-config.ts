@@ -97,17 +97,9 @@ export function readTeamChannelIdsFromEnv(
     return channels;
   }, {});
 
-  const channelsFromJson = parseTeamChannelIdsJson(env.TEAM_CHANNEL_IDS_JSON);
-  const teamOneChannel =
-    env.TEAM_A_CHANNEL_ID?.trim() || discoveredChannels['team-1'];
-  const teamTwoChannel =
-    env.TEAM_B_CHANNEL_ID?.trim() || discoveredChannels['team-2'];
-
   return {
-    ...channelsFromJson,
     ...discoveredChannels,
-    ...(teamOneChannel ? { 'team-a': teamOneChannel, 'team-1': teamOneChannel } : {}),
-    ...(teamTwoChannel ? { 'team-b': teamTwoChannel, 'team-2': teamTwoChannel } : {}),
+    ...parseTeamChannelIdsJson(env.TEAM_CHANNEL_IDS_JSON),
   };
 }
 

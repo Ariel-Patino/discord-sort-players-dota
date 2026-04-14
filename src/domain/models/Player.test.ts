@@ -7,47 +7,47 @@ import {
 describe('Player attributes', () => {
   it('keeps proficiency values as integers within the 0-100 range', () => {
     const attributes = normalizePlayerAttributes({
-      support: { isActive: true, proficiency: 72.8 },
-      tank: { isActive: false, proficiency: -10 },
-      carry: { isActive: true, proficiency: 150 },
+      support: 72.8,
+      tank: -10,
+      carry: 150,
     });
 
-    expect(attributes.support).toEqual({ isActive: true, proficiency: 73 });
-    expect(attributes.tank).toEqual({ isActive: false, proficiency: 0 });
-    expect(attributes.carry).toEqual({ isActive: true, proficiency: 100 });
+    expect(attributes.support).toBe(73);
+    expect(attributes.tank).toBe(0);
+    expect(attributes.carry).toBe(100);
   });
 
-  it('maps canonical tank flags into the normalized attribute object', () => {
-    const attributes = normalizePlayerAttributes(undefined, {
-      support: true,
+  it('drops unsupported legacy attribute payloads instead of coercing them', () => {
+    const attributes = normalizePlayerAttributes({
+      support: { isActive: true, proficiency: 72.8 },
       tank: true,
       carry: false,
     });
 
-    expect(attributes).toMatchObject({
-      support: { isActive: true, proficiency: 50 },
-      tank: { isActive: true, proficiency: 50 },
-      carry: { isActive: false, proficiency: 50 },
+    expect(attributes).toEqual({
+      support: 0,
+      tank: 0,
+      carry: 0,
     });
   });
 
-  it('builds default role attributes with an optional shared proficiency', () => {
-    const attributes = buildPlayerAttributes({ support: true, carry: true }, 64.4);
+  it('builds only the provided attributes using numeric values', () => {
+    const attributes = buildPlayerAttributes({ support: 64.4, carry: 64.4 }, 64.4);
 
-    expect(attributes.support).toEqual({ isActive: true, proficiency: 64 });
-    expect(attributes.carry).toEqual({ isActive: true, proficiency: 64 });
-    expect(attributes.tank).toEqual({ isActive: false, proficiency: 64 });
+    expect(attributes.support).toBe(64);
+    expect(attributes.carry).toBe(64);
+    expect(attributes).not.toHaveProperty('tank');
   });
 
   it('preserves arbitrary dynamic attributes without injecting unrelated defaults', () => {
     const attributes = normalizePlayerAttributes({
-      roamer: { isActive: true, proficiency: 74.2 },
-      jungler: { isActive: false, proficiency: 12 },
+      roamer: 74.2,
+      jungler: 12,
     });
 
     expect(attributes).toEqual({
-      roamer: { isActive: true, proficiency: 74 },
-      jungler: { isActive: false, proficiency: 12 },
+      roamer: 74,
+      jungler: 12,
     });
     expect(attributes).not.toHaveProperty('support');
     expect(attributes).not.toHaveProperty('tank');

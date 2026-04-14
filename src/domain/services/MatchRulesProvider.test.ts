@@ -1,10 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  buildPlayerAttributes,
-  createDefaultPlayerAttributes,
-  type Player,
-} from '@src/domain/models/Player';
-import MatchRulesProvider from './MatchRulesProvider';
+import { type Player } from '@src/domain/models/Player';
+import Dota1MatchmakingStrategy from './Dota1MatchmakingStrategy';
 
 function createPlayer(
   id: string,
@@ -12,14 +8,12 @@ function createPlayer(
   activeFlags: Partial<Record<'support' | 'tank' | 'carry', boolean>> = {},
   proficiencies: Partial<Record<'support' | 'tank' | 'carry', number>> = {}
 ): Player {
-  const attributes = createDefaultPlayerAttributes();
+  const attributes: Record<string, number> = {};
 
-  for (const [key, isActive] of Object.entries(buildPlayerAttributes(activeFlags))) {
-    attributes[key] = {
-      ...attributes[key],
-      isActive: isActive.isActive,
-      proficiency: proficiencies[key as 'support' | 'tank' | 'carry'] ?? isActive.proficiency,
-    };
+  for (const [key, isActive] of Object.entries(activeFlags)) {
+    attributes[key] = isActive
+      ? proficiencies[key as 'support' | 'tank' | 'carry'] ?? 90
+      : 0;
   }
 
   return {
@@ -31,8 +25,8 @@ function createPlayer(
   };
 }
 
-describe('MatchRulesProvider', () => {
-  const provider = new MatchRulesProvider();
+describe('Dota1MatchmakingStrategy', () => {
+  const provider = new Dota1MatchmakingStrategy();
 
   it('returns the expected 5v5 role constraints', () => {
     const constraints = provider.getConstraintsForTeamSize(5);

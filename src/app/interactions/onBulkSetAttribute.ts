@@ -149,8 +149,8 @@ export async function onBulkSetAttribute(
     const allActive =
       selectedPlayers.length > 0 &&
       selectedPlayers.every((player) => {
-        const attribute = player.attributes[attributeName];
-        return Boolean(attribute?.isActive) && Number(attribute?.proficiency ?? 0) > 0;
+        const attributeValue = Number(player.attributes[attributeName] ?? 0);
+        return attributeValue > 0;
       });
 
     if (allActive) {
@@ -181,10 +181,7 @@ export async function onBulkSetAttribute(
         embeds: [
           EmbedFactory.success(
             '✅ Attribute updated',
-            `${formatAttributeStatus(attributeName, {
-              isActive: false,
-              proficiency: 0,
-            })}\n**Players:** ${session.selectedPlayerIds.length}`
+            `${formatAttributeStatus(attributeName, 0)}\n**Players:** ${session.selectedPlayerIds.length}`
           ),
         ],
         ephemeral: true,
@@ -195,8 +192,7 @@ export async function onBulkSetAttribute(
     const suggestedProficiency = Math.max(
       1,
       Number(
-        selectedPlayers[0]?.attributes[attributeName]?.proficiency ??
-          DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY
+        selectedPlayers[0]?.attributes[attributeName] ?? DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY
       )
     );
 
@@ -259,10 +255,7 @@ export async function onBulkSetAttribute(
         embeds: [
           EmbedFactory.success(
             '✅ Attribute updated',
-            `${formatAttributeStatus(attributeName, {
-              isActive: normalizedProficiency > 0,
-              proficiency: normalizedProficiency,
-            })}\n**Players:** ${session.selectedPlayerIds.length}`
+            `${formatAttributeStatus(attributeName, normalizedProficiency)}\n**Players:** ${session.selectedPlayerIds.length}`
           ),
         ],
         ephemeral: true,
@@ -393,10 +386,7 @@ export async function onBulkSetAttribute(
         embeds: [
           EmbedFactory.success(
             '✅ Attribute added',
-            `${formatAttributeStatus(normalizedName, {
-              isActive: normalizedProficiency > 0,
-              proficiency: normalizedProficiency,
-            })}\n**Players:** ${session.selectedPlayerIds.length}`
+            `${formatAttributeStatus(normalizedName, normalizedProficiency)}\n**Players:** ${session.selectedPlayerIds.length}`
           ),
         ],
         ephemeral: true,

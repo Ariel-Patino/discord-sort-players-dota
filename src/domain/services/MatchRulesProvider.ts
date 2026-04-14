@@ -1,28 +1,71 @@
 import type { MatchConstraintConfig, MatchRuleConfig } from '@src/config/gameRules';
-import { gameRules } from '@src/config/gameRules';
-import type { CorePlayerAttributeKey, Player } from '@src/domain/models/Player';
+import { balancePlayersIntoTeams } from '@src/domain/services/BalanceTeamsService';
+import type { Player } from '@src/domain/models/Player';
+import type { Team } from '@src/domain/models/Team';
+import type {
+  ConstraintEvaluation,
+  IMatchmakingStrategy,
+  MatchConstraint,
+  MatchmakingStrategyOptions,
+  MatchmakingStrategyResult,
+  StrategyAttributeDefinition,
+} from './IMatchmakingStrategy';
 
-export interface Constraint {
-  id: string;
-  type: 'attribute-proficiency-threshold';
-  attribute: CorePlayerAttributeKey;
-  minCount: number;
-  minProficiency: number;
-  comparison: '>';
-  description: string;
+interface RuleBasedStrategyMetadata {
+  strategyId?: string;
+  displayName?: string;
+  attributeLabels?: Record<string, string>;
 }
 
-export interface ConstraintEvaluation {
-  constraint: Constraint;
-  matchedPlayerIds: string[];
-  satisfied: boolean;
-  shortage: number;
-}
+export default class MatchRulesProvider implements IMatchmakingStrategy {
+  constructor(
+    private readonly rules: MatchRuleConfig[],
+    private readonly metadata: RuleBasedStrategyMetadata = {}
+  ) {}
 
-export default class MatchRulesProvider {
-  constructor(private readonly rules: MatchRuleConfig[] = gameRules) {}
+  getStrategyId(): string {
+    return this.metadata.strategyId ?? 'rule-based';
+  }
 
-  getConstraintsForTeamSize(teamSize: number): Constraint[] {
+  getDisplayName(): string {
+    return this.metadata.displayName ?? 'Rule-Based Matchmaking';
+  }
+
+  getAttributeDefinitions(): StrategyAttributeDefinition[] {
+    return this.getAvailableAttributes().map((name) => ({
+      name,
+      label: this.resolveAttributeLabel(name),
+    }));
+  }
+
+  getAvailableAttributes(): string[] {
+    return [...new Set(
+      this.rules.flatMap((rule) => rule.constraints.map((constraint) => constraint.attribute))
+    )].sort((left, right) => left.localeCompare(right));
+  }
+
+  calculateTeamBalance(
+    players: Player[],
+    options: MatchmakingStrategyOptions = {}
+  ): MatchmakingStrategyResult {
+    const teamCount = Math.max(1, Math.floor(options.teamCount ?? 2));
+    const teamSize = Math.max(1, Math.floor(players.length / teamCount));
+    const constraints = this.getConstraintsForTeamSize(teamSize);
+    const teams = balancePlayersIntoTeams(players, {
+      noise: options.noise,
+      random: options.random,
+      teamCount,
+      teamNames: options.teamNames,
+      constraints,
+    });
+
+    return {
+      teams,
+      constraints,
+    };
+  }
+
+  getConstraintsForTeamSize(teamSize: number): MatchConstraint[] {
     const resolvedTeamSize = Math.max(1, Math.floor(teamSize));
     const matchedRule = this.resolveRule(resolvedTeamSize);
 
@@ -54,6 +97,14 @@ export default class MatchRulesProvider {
     return this.evaluateTeam(players, teamSize).every((result) => result.satisfied);
   }
 
+  validateConstraints(
+    team: Team,
+    options: { teamSize?: number } = {}
+  ): ConstraintEvaluation[] {
+    const teamSize = options.teamSize ?? team.players.length;
+    return this.evaluateTeam(team.players, teamSize);
+  }
+
   private resolveRule(teamSize: number): MatchRuleConfig | undefined {
     return this.rules.find((rule) => {
       const aboveMin = rule.minTeamSize === undefined || teamSize >= rule.minTeamSize;
@@ -66,7 +117,7 @@ export default class MatchRulesProvider {
     ruleId: string,
     constraint: MatchConstraintConfig,
     index: number
-  ): Constraint {
+  ): MatchConstraint {
     return {
       id: `${ruleId}:${constraint.attribute}:${index + 1}`,
       type: 'attribute-proficiency-threshold',
@@ -78,9 +129,14 @@ export default class MatchRulesProvider {
     };
   }
 
-  private playerMatchesConstraint(player: Player, constraint: Constraint): boolean {
-    const attribute = player.attributes[constraint.attribute];
+  private playerMatchesConstraint(player: Player, constraint: MatchConstraint): boolean {
+    const attributeValue = Number(player.attributes[constraint.attribute] ?? 0);
 
-    return Boolean(attribute?.isActive) && Number(attribute?.proficiency ?? 0) > constraint.minProficiency;
+    return attributeValue > constraint.minProficiency;
+  }
+
+  private resolveAttributeLabel(attributeName: string): string {
+    return this.metadata.attributeLabels?.[attributeName] ??
+      attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
   }
 }

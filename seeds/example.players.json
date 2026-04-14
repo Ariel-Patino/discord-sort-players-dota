@@ -1,0 +1,266 @@
+{
+  "_crossover_": {
+    "dotaName": "Crossover",
+    "rank": 4,
+    "attributes": {
+      "support": 0,
+      "carry": 90,
+      "tank": 80
+    }
+  },
+  "aldobarrera": {
+    "dotaName": "Virtual",
+    "rank": 2,
+    "attributes": {
+      "support": 10,
+      "carry": 20,
+      "tank": 50
+    }
+  },
+  "alvaroavilaperez": {
+    "dotaName": "Capcom",
+    "rank": 2,
+    "attributes": {
+      "support": 0,
+      "carry": 40,
+      "tank": 60
+    }
+  },
+  "ariel.patino": {
+    "dotaName": "Vulture",
+    "rank": 4,
+    "attributes": {
+      "support": 50,
+      "carry": 80,
+      "tank": 70
+    }
+  },
+  "carryover_26503": {
+    "dotaName": "Carryover",
+    "rank": 0,
+    "attributes": {
+      "support": 0,
+      "carry": 80,
+      "tank": 0
+    }
+  },
+  "cute_badger_46120": {
+    "dotaName": "neo",
+    "rank": 3,
+    "attributes": {
+      "support": 60,
+      "carry": 10,
+      "tank": 90
+    }
+  },
+  "franco.fral": {
+    "dotaName": "Melapelas",
+    "rank": 3,
+    "attributes": {
+      "support": 0,
+      "carry": 40,
+      "tank": 60
+    }
+  },
+  "gibranjs": {
+    "dotaName": "Dex",
+    "rank": 4,
+    "attributes": {
+      "support": 70,
+      "carry": 80,
+      "tank": 20
+    }
+  },
+  "hodric3734": {
+    "dotaName": "Hodric",
+    "rank": 2.5,
+    "attributes": {
+      "support": 50,
+      "carry": 5,
+      "tank": 70
+    }
+  },
+  "hodrick_45678": {
+    "dotaName": "Hodric",
+    "rank": 2.5,
+    "attributes": {
+      "support": 50,
+      "carry": 5,
+      "tank": 70
+    }
+  },
+  "huancar1758": {
+    "dotaName": "Neo",
+    "rank": 3,
+    "attributes": {
+      "support": 60,
+      "carry": 10,
+      "tank": 90
+    }
+  },
+  "isrgks77": {
+    "dotaName": "isrgks",
+    "rank": 5,
+    "attributes": {
+      "support": 0,
+      "carry": 80,
+      "tank": 0
+    }
+  },
+  "itachi071641": {
+    "dotaName": "Itachi",
+    "rank": 4,
+    "attributes": {
+      "support": 0,
+      "carry": 80,
+      "tank": 40
+    }
+  },
+  "joseluis6950": {
+    "dotaName": "Itachi",
+    "rank": 4,
+    "attributes": {
+      "support": 0,
+      "carry": 80,
+      "tank": 40
+    }
+  },
+  "keishie.": {
+    "dotaName": "Keishie",
+    "rank": 2,
+    "attributes": {
+      "support": 30,
+      "carry": 0,
+      "tank": 40
+    }
+  },
+  "lokogangan": {
+    "dotaName": "Loko",
+    "rank": 0,
+    "attributes": {
+      "support": 30,
+      "carry": 0,
+      "tank": 10
+    }
+  },
+  "m4700839": {
+    "dotaName": "Mato",
+    "rank": 4,
+    "attributes": {
+      "support": 95,
+      "carry": 90,
+      "tank": 70
+    }
+  },
+  "marchelo107": {
+    "dotaName": "marchelo107",
+    "rank": 2.5,
+    "attributes": {
+      "support": 50,
+      "carry": 50,
+      "tank": 50
+    }
+  },
+  "mato4130": {
+    "dotaName": "Mato",
+    "rank": 4,
+    "attributes": {
+      "support": 95,
+      "carry": 90,
+      "tank": 70
+    }
+  },
+  "mcadimad": {
+    "dotaName": "MCadima",
+    "rank": 3.5,
+    "attributes": {
+      "support": 20,
+      "carry": 60,
+      "tank": 60
+    }
+  },
+  "mcadimad.": {
+    "dotaName": "MCadima",
+    "rank": 1.5,
+    "attributes": {
+      "support": 20,
+      "carry": 60,
+      "tank": 60
+    }
+  },
+  "mgc0.": {
+    "dotaName": "Mgco",
+    "rank": 4.5,
+    "attributes": {
+      "support": 80,
+      "carry": 80,
+      "tank": 70
+    }
+  },
+  "notysimo4092": {
+    "dotaName": "drPato",
+    "rank": 3,
+    "attributes": {
+      "support": 50,
+      "carry": 20,
+      "tank": 60
+    }
+  },
+  "rampage055646": {
+    "dotaName": "Rampage",
+    "rank": 5,
+    "attributes": {
+      "support": 100,
+      "carry": 100,
+      "tank": 100
+    }
+  },
+  "rampage09283": {
+    "dotaName": "Rampage",
+    "rank": 5,
+    "attributes": {
+      "support": 100,
+      "carry": 100,
+      "tank": 100
+    }
+  },
+  "rampage4237": {
+    "dotaName": "Rampage",
+    "rank": 5,
+    "attributes": {
+      "support": 100,
+      "carry": 100,
+      "tank": 100
+    }
+  },
+  "richarde4999": {
+    "dotaName": "Ecos",
+    "rank": 0,
+    "attributes": {
+      "tank": 50
+    }
+  },
+  "rokko6963": {
+    "dotaName": "rokko",
+    "rank": 0,
+    "attributes": {
+      "tank": 50
+    }
+  },
+  "vicho9622": {
+    "dotaName": "Vicho",
+    "rank": 2,
+    "attributes": {
+      "carry": 50
+    }
+  },
+  "vulture_255": {
+    "dotaName": "Vulture",
+    "rank": 4,
+    "attributes": {
+      "support": 50,
+      "carry": 80,
+      "tank": 70
+    }
+  }
+}

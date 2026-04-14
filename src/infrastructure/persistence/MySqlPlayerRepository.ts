@@ -14,9 +14,7 @@ interface PlayerRow extends RowDataPacket {
   dotaName: string | null;
   rank: number | string | null;
   attributes?: PlayerAttributes | string | null;
-  support?: boolean | number | null;
-  tank?: boolean | number | null;
-  carry?: boolean | number | null;
+  [key: string]: unknown;
 }
 
 export default class MySqlPlayerRepository implements PlayerRepository {
@@ -77,16 +75,14 @@ export default class MySqlPlayerRepository implements PlayerRepository {
   }
 
   private toDomainPlayer(row: PlayerRow): Player {
+    const { id, dotaName, rank, attributes } = row;
+
     return {
-      id: row.id,
-      externalId: row.id,
-      displayName: row.dotaName || row.id,
-      rank: Number(row.rank ?? 0),
-      attributes: normalizePlayerAttributes(this.parseAttributes(row.attributes), {
-        support: row.support,
-        tank: row.tank,
-        carry: row.carry,
-      }),
+      id,
+      externalId: id,
+      displayName: dotaName || id,
+      rank: Number(rank ?? 0),
+      attributes: normalizePlayerAttributes(this.parseAttributes(attributes)),
     };
   }
 

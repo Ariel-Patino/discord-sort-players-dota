@@ -2,15 +2,17 @@
 
 _Professional audit of the Discord bot's interaction design, user-facing content, scalability constraints, and operational resilience. This document is intended for maintainers and contributors evaluating the project for improvement under the MIT license._
 
+_Status note (2026-04-13): this document is now partly historical. Several recommendations here have already been implemented, including centralized localization, `EmbedFactory`-based response patterns, configured team-channel deployment, and removal of offensive placeholder text._
+
 ## 1. Executive Summary
 
 The bot already provides the functional building blocks for team sorting, voice movement, and rank management, but the current user experience is inconsistent in tone and presentation. Some commands return plain text, some return embeds, some rely on informal or unprofessional language, and several workflows would benefit from clearer state transitions and richer interactive feedback.
 
-From a UX and product-polish perspective, the most important findings are:
+From a UX and product-polish perspective, the most important remaining findings are:
 
-1. **Presentation is inconsistent** across commands and interaction flows.
-2. **User-facing text quality is uneven**, including slang, placeholders, mixed-language labels, and offensive phrasing.
-3. **The current team model is fixed around two teams and name-based voice routing**, which limits scalability and configurability.
+1. **Presentation is improved but not fully uniform** across commands and interaction flows.
+2. **Most user-facing text is now centralized and professional**, but a few command paths still return plain text instead of structured embeds.
+3. **The team model is partially generalized**, but `!swap` remains a two-team command even though sorting and deployment support dynamic `teams[]` state.
 4. **Error handling is mostly local and ad hoc**, with limited structure for logging, recovery, and user-safe feedback.
 
 For a public-facing MIT-licensed repository, the recommended direction is to standardize the bot around a **consistent interaction system**, a **centralized localization/string map**, and a **configurable multi-team orchestration model**.
@@ -23,11 +25,11 @@ For a public-facing MIT-licensed repository, the recommended direction is to sta
 
 The codebase currently uses a mix of:
 
-- plain text channel messages
-- `EmbedBuilder` responses for some commands
+- plain text channel messages in some older command paths
+- `EmbedFactory` responses for most primary command outcomes
 - select menus for rank updates and manual movement
 - buttons for rank pagination
-- modal submission for rank input
+- modal submission for rank and attribute input
 
 This is a solid foundation, but the presentation style is not yet unified.
 
@@ -35,16 +37,17 @@ This is a solid foundation, but the presentation style is not yet unified.
 
 - `!help` already uses an embed and grouped sections.
 - `!setrank` uses select menus and a modal, which is the most modern interaction flow in the bot.
+- `!setattribute` now follows the same interactive pattern style for attribute updates.
 - `!move` already uses select menus rather than forcing manual ID entry.
 - `!sort`, `!swap`, and `!replay` produce structured embeds with rank summaries.
 
 ### Current weaknesses
 
 - several commands still use raw plain-text messages instead of embeds or ephemeral interaction feedback
-- response tone varies from professional to highly informal
+- some validation paths still use terse operational copy rather than the richer localized tone used elsewhere
 - state changes are not consistently confirmed with branded or structured UI
 - error messages are often terse, unclear, or unsuitable for a public/community-facing bot
-- some labels and strings are mixed-language or placeholder-like (`Nuevo Rank`, `R U a f* loser?`, `U need to have the power to change this.`)
+- some workflows still expose low-context usage messages rather than guided corrective actions
 
 ## 2.2 Recommended premium interaction model
 
@@ -150,21 +153,11 @@ This reduces repetition and ensures consistent visual quality.
 
 ## 3. Content Audit
 
-## 3.1 Unprofessional or inappropriate language identified
+## 3.1 Historical content issues now resolved
 
-The following strings should be treated as content-quality defects and replaced.
+Earlier revisions of the project contained offensive, mixed-language, or placeholder copy. Those issues have largely been resolved through the current localization layer in `src/localization/**` and presentation helpers in `src/presentation/discord/**`.
 
-| Current Text | File | Issue |
-|---|---|---|
-| `Just Pick one, Fucking pussy!` | `src/factory/commands/game/SortRankedCommand.ts` | Explicitly offensive and unsuitable for public use |
-| `R U a f* loser?, call someone else to play with!` | `textSource.json` | Harassing and unprofessional |
-| `U need to have the power to change this.` | `src/index.ts`, `src/factory/commands/game/MoveCommand.ts` | Informal and unclear |
-| `There is nobody, mr/ms Lonely.` | `src/factory/commands/game/RegroupCommand.ts` | Mocking/informal tone |
-| `Wrong command. Use !help to see the available options.` | `src/index.ts` | Functional, but too generic and inconsistent with richer UX patterns |
-| `Lobby channel not found".` | `src/factory/commands/game/RegroupCommand.ts` | Typographic issue and low-quality phrasing |
-| `UNKNOWN` | multiple files | Placeholder-like fallback not ideal for polished UX |
-| `Nuevo Rank` | `src/index.ts` | Mixed language relative to the repository's current documentation direction |
-| `DOTITA` / `Sort Bot v0.7 VULTURE` | command embeds | Branded/informal wording not ideal for neutral open-source presentation |
+The main remaining content issue is consistency: some older command paths still return plain usage text where the rest of the bot now uses structured embeds and clearer corrective hints.
 
 ## 3.2 Standardized string-map approach
 
@@ -232,12 +225,12 @@ This change is not only cosmetic; it materially improves maintainability and com
 
 ## 4.1 Current limitation
 
-The current logic is effectively designed for **exactly two teams** and **exactly two destination voice channels**:
+The current logic is only **partially generalized**:
 
-- `src/state/teams.ts` stores only `sentinel` and `scourge`
-- `GoCommand` searches specifically for `sentinel/radiant` and `scourge/dire`
-- result formatting assumes two score columns
-- swap and replay behavior operate on two fixed arrays
+- `src/state/teams.ts` stores a dynamic `MatchSession` with `teams[]`
+- `GoCommand` deploys by configured `teamChannelIds` instead of hardcoded name fragments
+- sort history stores generic team collections
+- `!swap` still operates on two-team compatibility arrays and is limited to two-team matches
 
 This is acceptable for the current Dota-oriented use case, but it does not generalize to:
 - more than two teams
@@ -249,13 +242,7 @@ This is acceptable for the current Dota-oriented use case, but it does not gener
 
 The bot should evolve from a fixed-pair model to a **team collection model**.
 
-### Replace this shape:
-
-```ts
-{ sentinel: string[]; scourge: string[] }
-```
-
-### With a generalized shape:
+### The codebase already moved toward this generalized shape:
 
 ```ts
 interface TeamAssignment {
@@ -328,9 +315,9 @@ The following modules should be redesigned for multi-team support:
 
 | Current Module | Current Limitation | Recommended Direction |
 |---|---|---|
-| `src/state/teams.ts` | fixed two-team structure | replace with `MatchSession` store containing `teams[]` |
-| `src/store/sortHistory.ts` | assumes two scores and two rosters | store a generic `teams: TeamAssignment[]` payload |
-| `GoCommand.ts` | fixed channel lookup strategy | move by configured channel IDs per team |
+| `src/state/teams.ts` | dynamic `teams[]` already exists, but remains process-local | persist or scope state by guild if durability is needed |
+| `src/store/sortHistory.ts` | dynamic teams only, still process-local | persist or scope history by guild if replay durability is needed |
+| `GoCommand.ts` | configured IDs are in place, but deployment remains Discord-coupled | keep configured channel IDs and extract deployment into a transport adapter/use case |
 | `SwapCommand.ts` | pairwise sentinel/scourge operations | redesign into generic roster-adjustment use cases |
 | sort result embed | two fixed columns | render a dynamic number of fields or paginated team cards |
 
@@ -421,8 +408,8 @@ To reduce bot instability:
 ## Phase 1 — Content and Tone Cleanup
 
 Scope:
-- remove offensive or mocking strings
-- unify response language to professional English
+- continue replacing remaining plain-text operational responses with localized embed-based responses
+- keep response language consistent across older and newer command paths
 - move user-facing text into a centralized string map
 - replace low-quality fallbacks like `UNKNOWN` with professional alternatives such as `Unregistered Player`
 
@@ -455,9 +442,9 @@ Scope:
 
 If only a few improvements can be addressed first, the recommended order is:
 
-1. **Remove offensive and inconsistent user-facing text immediately**
-2. **Centralize strings and standardize embed-based responses**
-3. **Introduce a generic multi-team session model**
+1. **Standardize remaining plain-text responses behind the localization and embed system**
+2. **Finish generalizing swap and related roster-adjustment flows beyond two teams**
+3. **Introduce a generic multi-team session model everywhere, not just in sort/deploy state**
 4. **Replace name-based channel routing with configured channel IDs**
 5. **Implement centralized error handling and structured logs**
 
@@ -465,6 +452,6 @@ If only a few improvements can be addressed first, the recommended order is:
 
 ## 8. Conclusion
 
-From a UX and polish perspective, the bot has a usable functional core but requires standardization to feel production-ready and community-appropriate. The most important steps are to normalize the presentation layer, remove unprofessional language, centralize string management, and generalize the team model beyond the current two-channel assumption.
+From a UX and polish perspective, the bot now has a much stronger baseline than earlier revisions, but it still needs consistency work to feel fully production-ready. The most important remaining steps are to normalize older plain-text flows, complete the multi-team generalization around manual roster adjustments, and keep all user-facing responses aligned with the current localization and embed system.
 
 With these changes, the repository can provide a significantly more professional developer and end-user experience while remaining a practical foundation for future contributors in the MIT-licensed open-source ecosystem.

@@ -7,6 +7,11 @@ import {
   type AppConfig,
   validateAppConfig,
 } from './app-config';
+import {
+  availableMatchmakingStrategyIds,
+  createConfiguredMatchmakingStrategy,
+  readMatchmakingStrategyIdFromEnv,
+} from './matchmaking-strategy';
 
 const baseRuntimeConfig: RuntimeConfig = {
   token: 'token-value',
@@ -81,6 +86,51 @@ describe('readTeamChannelIdsFromEnv', () => {
     expect(channels['team-2']).toBe('222');
     expect(channels['team-3']).toBe('333');
     expect(channels['team-4']).toBe('444');
+  });
+
+  it('does not expose deprecated team aliases', () => {
+    const channels = readTeamChannelIdsFromEnv({
+      TEAM_1_CHANNEL_ID: '111',
+      TEAM_2_CHANNEL_ID: '222',
+      TEAM_A_CHANNEL_ID: 'aaa',
+      TEAM_B_CHANNEL_ID: 'bbb',
+    });
+
+    expect(channels['team-1']).toBe('111');
+    expect(channels['team-2']).toBe('222');
+    expect(channels['team-a']).toBeUndefined();
+    expect(channels['team-b']).toBeUndefined();
+  });
+});
+
+describe('matchmaking strategy configuration', () => {
+  it('defaults to the dota1 strategy when the environment variable is missing', () => {
+    expect(readMatchmakingStrategyIdFromEnv({})).toBe('dota1');
+    expect(createConfiguredMatchmakingStrategy({}).getStrategyId()).toBe('dota1');
+  });
+
+  it('loads the configured strategy id from the environment', () => {
+    const strategy = createConfiguredMatchmakingStrategy({
+      MATCHMAKING_STRATEGY: 'dota1',
+    });
+
+    expect(strategy.getStrategyId()).toBe('dota1');
+    expect(strategy.getDisplayName()).toBe('Dota 1 Matchmaking');
+    expect(strategy.getAttributeDefinitions().map((attribute) => attribute.label)).toEqual([
+      'Carry',
+      'Support',
+      'Tank',
+    ]);
+  });
+
+  it('rejects unknown strategy ids with a useful error', () => {
+    expect(() =>
+      createConfiguredMatchmakingStrategy({
+        MATCHMAKING_STRATEGY: 'unknown-game',
+      })
+    ).toThrow(
+      `Unknown MATCHMAKING_STRATEGY \"unknown-game\". Available strategies: ${availableMatchmakingStrategyIds.join(', ')}.`
+    );
   });
 });
 

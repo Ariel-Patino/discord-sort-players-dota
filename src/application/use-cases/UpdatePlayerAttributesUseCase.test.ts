@@ -1,8 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  createDefaultPlayerAttributes,
-  type Player,
-} from '@src/domain/models/Player';
+import { type Player } from '@src/domain/models/Player';
 import type { PlayerRepository } from '@src/domain/ports/PlayerRepository';
 import { ValidationError } from '@src/shared/errors';
 import UpdatePlayerAttributesUseCase from './UpdatePlayerAttributesUseCase';
@@ -49,7 +46,7 @@ describe('UpdatePlayerAttributesUseCase', () => {
         externalId: '1',
         displayName: 'Alice',
         rank: 2.5,
-        attributes: createDefaultPlayerAttributes(),
+        attributes: {},
       },
     ]);
     const useCase = new UpdatePlayerAttributesUseCase(repository);
@@ -63,10 +60,7 @@ describe('UpdatePlayerAttributesUseCase', () => {
     expect(result.attributeName).toBe('roamer');
     expect(result.isActive).toBe(true);
     expect(result.proficiency).toBe(85);
-    expect((await repository.getById('alice'))?.attributes.roamer).toEqual({
-      isActive: true,
-      proficiency: 85,
-    });
+    expect((await repository.getById('alice'))?.attributes.roamer).toBe(85);
   });
 
   it('deactivates the tank role when the value is zero', async () => {
@@ -76,7 +70,7 @@ describe('UpdatePlayerAttributesUseCase', () => {
         externalId: '1',
         displayName: 'Alice',
         rank: 2.5,
-        attributes: createDefaultPlayerAttributes(),
+        attributes: {},
       },
     ]);
     const useCase = new UpdatePlayerAttributesUseCase(repository);
@@ -90,10 +84,7 @@ describe('UpdatePlayerAttributesUseCase', () => {
     expect(result.attributeName).toBe('tank');
     expect(result.isActive).toBe(false);
     expect(result.proficiency).toBe(0);
-    expect((await repository.getById('alice'))?.attributes.tank).toEqual({
-      isActive: false,
-      proficiency: 0,
-    });
+    expect((await repository.getById('alice'))?.attributes.tank).toBe(0);
   });
 
   it('rejects invalid attribute names, missing players, and out-of-range values', async () => {

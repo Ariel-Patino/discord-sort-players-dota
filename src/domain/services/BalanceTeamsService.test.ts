@@ -1,9 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  createDefaultPlayerAttributes,
-  type Player,
-} from '@src/domain/models/Player';
-import MatchRulesProvider from './MatchRulesProvider';
+import { type Player } from '@src/domain/models/Player';
+import Dota1MatchmakingStrategy from './Dota1MatchmakingStrategy';
 import { balancePlayersIntoTeams } from './BalanceTeamsService';
 
 function createPlayers(ranks: number[]): Player[] {
@@ -12,7 +9,7 @@ function createPlayers(ranks: number[]): Player[] {
     externalId: `discord-${index + 1}`,
     displayName: `Player ${index + 1}`,
     rank,
-    attributes: createDefaultPlayerAttributes(),
+    attributes: {},
   }));
 }
 
@@ -26,13 +23,12 @@ function createRolePlayer(
   activeFlags: Partial<Record<'support' | 'tank' | 'carry', boolean>> = {},
   proficiencies: Partial<Record<'support' | 'tank' | 'carry', number>> = {}
 ): Player {
-  const attributes = createDefaultPlayerAttributes();
+  const attributes: Record<string, number> = {};
 
   for (const key of ['support', 'tank', 'carry'] as const) {
-    attributes[key] = {
-      isActive: Boolean(activeFlags[key]),
-      proficiency: proficiencies[key] ?? (activeFlags[key] ? 90 : 50),
-    };
+    attributes[key] = activeFlags[key]
+      ? proficiencies[key] ?? 90
+      : 0;
   }
 
   return {
@@ -133,7 +129,7 @@ describe('balancePlayersIntoTeams', () => {
   });
 
   it('seeds mandatory role players before greedy balancing when constraints are available', () => {
-    const matchRulesProvider = new MatchRulesProvider();
+    const matchRulesProvider = new Dota1MatchmakingStrategy();
     const players = [
       createRolePlayer('carry-a', 9, { carry: true }, { carry: 95 }),
       createRolePlayer('carry-b', 8, { carry: true }, { carry: 91 }),
@@ -168,7 +164,7 @@ describe('balancePlayersIntoTeams', () => {
   });
 
   it('falls back to the next best role players when a threshold cannot be satisfied', () => {
-    const matchRulesProvider = new MatchRulesProvider();
+    const matchRulesProvider = new Dota1MatchmakingStrategy();
     const players = [
       createRolePlayer('carry-a', 9, { carry: true }, { carry: 95 }),
       createRolePlayer('carry-b', 8, { carry: true }, { carry: 82 }),
@@ -191,7 +187,7 @@ describe('balancePlayersIntoTeams', () => {
 
     for (const team of teams) {
       const teamPlayers = createTeamPlayers(team.players, playersById);
-      expect(teamPlayers.some((player) => player.attributes.support.isActive)).toBe(true);
+      expect(teamPlayers.some((player) => Number(player.attributes.support ?? 0) > 0)).toBe(true);
       expect(matchRulesProvider.satisfiesTeamConstraints(teamPlayers, 4)).toBe(false);
       expect(
         team.roleAssignments?.some(

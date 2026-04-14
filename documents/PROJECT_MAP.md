@@ -33,17 +33,26 @@ The repository appears to be maintained as a lightweight MIT-licensed applicatio
 ├── documents/
 │   ├── DB-README.md            # Database reset and MySQL usage guide
 │   └── PROJECT_MAP.md          # This document
+├── seeds/                      # Example and custom JSON seed files for first-time DB initialization
 └── src/
+    ├── app/                    # Discord interaction/event handlers
+    ├── application/            # Use cases for sorting and player updates
     ├── config.ts               # Environment/config loading and validation
+    ├── config/                 # Typed app config and game rules
     ├── db.ts                   # MySQL connection pool setup
+    ├── domain/                 # Domain models, ports, and balancing services
+    ├── infrastructure/         # Discord, logging, and persistence adapters
     ├── index.ts                # Main Discord client entrypoint
     ├── init-db.ts              # Database initialization and seeding
+    ├── localization/           # User-facing strings and translation helpers
+    ├── presentation/           # Discord-facing presentation helpers
     ├── components/
     │   ├── move-ui.ts          # UI components for move workflows
+    │   ├── setattribute-ui.ts  # UI components for attribute updates
     │   └── setrank-ui.ts       # UI components for rank selection/update
     ├── factory/
     │   └── commands/
-    │       ├── game/           # Match, sort, move, rank, and swap commands
+    │       ├── game/           # Match, sort, move, rank, attribute, and swap commands
     │       ├── main/           # Base command class, factory, help command
     │       └── players/        # Player listing commands
     ├── helpers/
@@ -73,12 +82,12 @@ The repository appears to be maintained as a lightweight MIT-licensed applicatio
 | Configuration | `src/config.ts` | Loads required runtime configuration such as bot token and DB settings. |
 | Database Access | `src/db.ts`, `src/init-db.ts` | Establishes the MySQL connection and creates/seeds the `players` table when needed. |
 | Command Routing | `src/factory/commands/main/CommandFactory.ts` | Maps incoming command tokens to concrete command classes. |
-| Game Commands | `src/factory/commands/game/*.ts` | Implements sorting, regrouping, replay, swapping, movement, and rank-related actions. |
+| Game Commands | `src/factory/commands/game/*.ts` | Implements sorting, regrouping, replay, swapping, movement, rank updates, and attribute updates. |
 | Player Commands | `src/factory/commands/players/*.ts` | Provides commands for listing all or online players. |
 | UI Components | `src/components/*.ts` | Builds Discord interaction components such as menus, buttons, and modals. |
 | Service Layer | `src/services/players.service.ts` | Synchronizes guild members with persisted player records and exposes read helpers. |
 | In-Memory State | `src/state/teams.ts`, `src/store/sortHistory.ts` | Maintains runtime-only team assignments and previous sort results. |
-| Seed Data | `src/store/players.ts` | Provides the initial dataset used during first-time DB seeding. |
+| Seed Data | `seeds/*.json` | Provides the initial dataset used during first-time DB seeding. |
 | Utilities and Types | `src/utils/*.ts`, `src/types/*.ts` | Encapsulates validation helpers and shared type definitions. |
 
 ---
@@ -100,12 +109,11 @@ The application follows a **factory-based command pattern**.
 | Command Group | Files | Purpose |
 |---|---|---|
 | Main | `main/Command.ts`, `main/CommandFactory.ts`, `main/HelpCommand.ts` | Base command abstraction and shared routing/help behavior. |
-| Game | `GoCommand.ts`, `MoveCommand.ts`, `RegroupCommand.ts`, `ReplaySortCommand.ts`, `SetRankCommand.ts`, `SortCommand.ts`, `SortRankedCommand.ts`, `SwapCommand.ts` | Match organization, team sorting, rank updates, movement, and replay logic. |
+| Game | `GoCommand.ts`, `MoveCommand.ts`, `RegroupCommand.ts`, `ReplaySortCommand.ts`, `SetAttributeCommand.ts`, `SetRankCommand.ts`, `SortRankedCommand.ts`, `SwapCommand.ts` | Match organization, team sorting, rank and attribute updates, movement, and replay logic. |
 | Players | `ListOnlinePlayersCommand.ts`, `ListPlayersCommand.ts` | Player discovery and reporting. |
 
 Mapped command tokens currently include:
 
-- `!sort-old`
 - `!sort`
 - `!listall`
 - `!list`
@@ -115,6 +123,7 @@ Mapped command tokens currently include:
 - `!help`
 - `!swap`
 - `!setrank`
+- `!setattribute`
 - `!move`
 
 ---

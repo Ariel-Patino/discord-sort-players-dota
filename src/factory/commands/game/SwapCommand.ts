@@ -15,7 +15,7 @@ export default class SwapCommand extends Command {
   async execute(): Promise<void> {
     const parts = this.command.trim().split(/\s+/);
     if (parts.length < 3) {
-      this.chatChannel.channel.send('Swap format: `!swap <sentinel position> <scourge position>`');
+      this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
       return;
     }
 
@@ -36,7 +36,7 @@ export default class SwapCommand extends Command {
     if (!isDash1) {
       pos1 = parseInt(arg1, 10);
       if (isNaN(pos1) || pos1 <= 0) {
-        this.chatChannel.channel.send('Swap format: `!swap <sentinel position> <scourge position>`');
+        this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
         return;
       }
     }
@@ -44,7 +44,7 @@ export default class SwapCommand extends Command {
     if (!isDash2) {
       pos2 = parseInt(arg2, 10);
       if (isNaN(pos2) || pos2 <= 0) {
-        this.chatChannel.channel.send('Swap format: `!swap <sentinel position> <scourge position>`');
+        this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
         return;
       }
     }
@@ -77,8 +77,8 @@ export default class SwapCommand extends Command {
 
     const firstTeamLabel = lastSort.teams[0]?.teamName ?? 'Team 1';
     const secondTeamLabel = lastSort.teams[1]?.teamName ?? 'Team 2';
-    const team1 = [...lastSort.team1];
-    const team2 = [...lastSort.team2];
+  const team1 = [...(lastSort.teams[0]?.players ?? [])];
+  const team2 = [...(lastSort.teams[1]?.players ?? [])];
 
     if (!isDash1 && !isDash2) {
       const index1 = (pos1 as number) - 1;
@@ -151,10 +151,6 @@ export default class SwapCommand extends Command {
     const sortId = addSort({
       sessionId: lastSort.sessionId,
       teams: updatedTeams,
-      team1,
-      team2,
-      score1,
-      score2,
       timestamp: Date.now(),
     });
 

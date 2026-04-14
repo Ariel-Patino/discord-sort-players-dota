@@ -1,9 +1,4 @@
-export interface PlayerAttribute {
-  isActive: boolean;
-  proficiency: number;
-}
-
-export type PlayerAttributes = Record<string, PlayerAttribute>;
+export type PlayerAttributes = Record<string, number>;
 
 export interface Player {
   id: string;
@@ -14,85 +9,57 @@ export interface Player {
 }
 
 export const DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY = 50;
-export const CORE_PLAYER_ATTRIBUTE_KEYS = ['support', 'tank', 'carry'] as const;
-
-export type CorePlayerAttributeKey =
-  (typeof CORE_PLAYER_ATTRIBUTE_KEYS)[number];
 
 export function normalizeAttributeProficiency(rawValue: unknown): number {
   const numericValue = Number(rawValue);
 
   if (!Number.isFinite(numericValue)) {
-    return DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY;
+    return 0;
   }
 
   return Math.min(100, Math.max(0, Math.round(numericValue)));
 }
 
-function normalizeSingleAttribute(rawAttribute: unknown): PlayerAttribute {
+function normalizeSingleAttribute(rawAttribute: unknown): number {
   if (typeof rawAttribute === 'boolean') {
-    return {
-      isActive: rawAttribute,
-      proficiency: DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY,
-    };
+    return 0;
   }
 
-  if (!rawAttribute || typeof rawAttribute !== 'object' || Array.isArray(rawAttribute)) {
-    return {
-      isActive: false,
-      proficiency: DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY,
-    };
+  if (rawAttribute && typeof rawAttribute === 'object') {
+    return 0;
   }
 
-  const { isActive, proficiency } = rawAttribute as {
-    isActive?: unknown;
-    proficiency?: unknown;
-  };
-
-  return {
-    isActive: Boolean(isActive),
-    proficiency: normalizeAttributeProficiency(proficiency),
-  };
+  return normalizeAttributeProficiency(rawAttribute);
 }
 
 export function createDefaultPlayerAttributes(
-  defaultProficiency = DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY,
-  attributeKeys: readonly string[] = CORE_PLAYER_ATTRIBUTE_KEYS
+  attributeKeys: readonly string[] = [],
+  defaultValue = 0
 ): PlayerAttributes {
-  const normalizedProficiency = normalizeAttributeProficiency(defaultProficiency);
   const normalizedKeys = [...new Set(attributeKeys.map(normalizeAttributeKey))].filter(
     Boolean
   );
+  const normalizedValue = normalizeAttributeProficiency(defaultValue);
 
   return Object.fromEntries(
-    normalizedKeys.map((key) => [
-      key,
-      {
-        isActive: false,
-        proficiency: normalizedProficiency,
-      },
-    ])
+    normalizedKeys.map((key) => [key, normalizedValue])
   );
 }
 
 export function buildPlayerAttributes(
-  activeFlags: Partial<Record<string, boolean>> = {},
-  defaultProficiency = DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY
+  rawAttributes: Partial<Record<string, unknown>> = {},
+  defaultValue = DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY
 ): PlayerAttributes {
-  const attributeKeys = [...new Set([...CORE_PLAYER_ATTRIBUTE_KEYS, ...Object.keys(activeFlags)])];
-  const attributes = createDefaultPlayerAttributes(defaultProficiency, attributeKeys);
+  const attributes = createDefaultPlayerAttributes([], defaultValue);
 
-  for (const [rawKey, rawValue] of Object.entries(activeFlags)) {
+  for (const [rawKey, rawValue] of Object.entries(rawAttributes)) {
     const key = normalizeAttributeKey(rawKey);
 
     if (!key) {
       continue;
     }
 
-    attributes[key] = {
-      ...attributes[key],
-      isActive: Boolean(rawValue),
-    };
+    attributes[key] = normalizeSingleAttribute(rawValue);
   }
 
   return attributes;
@@ -103,8 +70,7 @@ function normalizeAttributeKey(rawKey: string): string {
 }
 
 export function normalizePlayerAttributes(
-  rawAttributes: unknown,
-  legacyFlags: Partial<Record<string, boolean | number | null | undefined>> = {}
+  rawAttributes: unknown
 ): PlayerAttributes {
   const normalizedAttributes: PlayerAttributes = {};
 
@@ -120,25 +86,6 @@ export function normalizePlayerAttributes(
 
       normalizedAttributes[normalizedKey] = normalizeSingleAttribute(rawValue);
     }
-  }
-
-  for (const [legacyKey, rawFlag] of Object.entries(legacyFlags)) {
-    if (rawFlag === undefined || rawFlag === null) {
-      continue;
-    }
-
-    const targetKey = normalizeAttributeKey(legacyKey);
-
-    if (!targetKey) {
-      continue;
-    }
-
-    const existingAttribute = normalizedAttributes[targetKey];
-    normalizedAttributes[targetKey] = {
-      isActive: Boolean(rawFlag),
-      proficiency:
-        existingAttribute?.proficiency ?? DEFAULT_PLAYER_ATTRIBUTE_PROFICIENCY,
-    };
   }
 
   return normalizedAttributes;

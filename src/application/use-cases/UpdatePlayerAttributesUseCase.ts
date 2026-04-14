@@ -16,6 +16,8 @@ export interface UpdatePlayerAttributeInput {
 export interface UpdatedPlayerAttribute {
   playerId: string;
   attributeName: string;
+  value: number;
+  previousValue: number;
   isActive: boolean;
   proficiency: number;
   previousIsActive: boolean;
@@ -49,17 +51,11 @@ export default class UpdatePlayerAttributesUseCase {
     }
 
     const currentAttributes = normalizePlayerAttributes(existingPlayer.attributes);
-    const previousAttribute = currentAttributes[normalizedAttributeName] ?? {
-      isActive: false,
-      proficiency: 0,
-    };
+    const previousValue = currentAttributes[normalizedAttributeName] ?? 0;
 
     const nextAttributes = {
       ...currentAttributes,
-      [normalizedAttributeName]: {
-        isActive: normalizedProficiency > 0,
-        proficiency: normalizedProficiency,
-      },
+      [normalizedAttributeName]: normalizedProficiency,
     };
 
     await this.playerRepository.save({
@@ -72,10 +68,12 @@ export default class UpdatePlayerAttributesUseCase {
     return {
       playerId,
       attributeName: normalizedAttributeName,
+      value: normalizedProficiency,
+      previousValue,
       isActive: normalizedProficiency > 0,
       proficiency: normalizedProficiency,
-      previousIsActive: previousAttribute.isActive,
-      previousProficiency: previousAttribute.proficiency,
+      previousIsActive: previousValue > 0,
+      previousProficiency: previousValue,
     };
   }
 

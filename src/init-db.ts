@@ -2,9 +2,10 @@ import 'module-alias/register';
 import Logger from '@src/infrastructure/logging/Logger';
 import { registerProcessErrorHandlers } from '@src/infrastructure/logging/process-hooks';
 import { ensurePlayerTableSchema } from '@src/infrastructure/persistence/playerSchema';
+import { loadPlayerSeed } from '@src/infrastructure/persistence/playerSeed';
+import { normalizePlayerAttributes } from '@src/domain/models/Player';
 import { db } from './db';
 import { config } from './config';
-import { players } from './store/players';
 
 registerProcessErrorHandlers({
   commandName: 'setup-db',
@@ -32,11 +33,13 @@ async function init() {
     return;
   }
 
-  for (const [id, info] of Object.entries(players)) {
+  const seed = await loadPlayerSeed();
+
+  for (const [id, info] of Object.entries(seed.players)) {
     await db.query(
       `INSERT INTO \`${table}\` (id, dotaName, \`rank\`, attributes)
        VALUES (?, ?, ?, ?)`,
-      [id, info.dotaName, info.rank, JSON.stringify(info.attributes)]
+      [id, info.dotaName, info.rank, JSON.stringify(normalizePlayerAttributes(info.attributes))]
     );
   }
 
@@ -46,7 +49,8 @@ async function init() {
     userId: null,
     metadata: {
       table,
-      seededPlayers: Object.keys(players).length,
+      seededPlayers: Object.keys(seed.players).length,
+      seedFile: seed.filePath,
     },
   });
   await db.end();

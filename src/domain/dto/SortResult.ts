@@ -1,8 +1,8 @@
-import type { Constraint } from '@src/domain/services/MatchRulesProvider';
+import type { MatchConstraint } from '@src/domain/services/IMatchmakingStrategy';
 
 export interface TeamRoleAssignment {
   playerId: string;
-  attribute: Constraint['attribute'];
+  attribute: MatchConstraint['attribute'];
   constraintId: string;
   usedFallback: boolean;
 }
@@ -19,5 +19,5 @@ export interface SortResult {
   sessionId: string;
   createdAt: number;
   teams: SortResultTeam[];
-  constraints: Constraint[];
+  constraints: MatchConstraint[];
 }

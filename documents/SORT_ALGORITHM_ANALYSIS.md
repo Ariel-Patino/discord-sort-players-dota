@@ -11,13 +11,15 @@ The current `!sort` implementation is **not random-only** and **not a snake draf
 
 1. gather all connected voice members,
 2. hydrate or create their rank records,
-3. optionally inject a small amount of rank noise,
-4. sort players from highest to lowest effective rank,
-5. repeatedly place the next player into the currently lowest-scoring non-full team.
+3. resolve team-size-dependent role constraints,
+4. optionally inject a small amount of rank noise,
+5. sort players from highest to lowest effective rank,
+6. seed constrained roles first,
+7. repeatedly place the remaining players into the currently lowest-scoring non-full team.
 
 This is a reasonable heuristic and is computationally cheap, but it is **not guaranteed to find the globally best balance**. In other words, it often produces good results, but it can still generate visibly stacked teams when a better partition exists.
 
-A critical architectural point is that the mathematical balancing logic is centralized in **`src/domain/services/BalanceTeamsService.ts`**. Both the legacy prefix command (`!sort`) and the slash command (`/sort`) reuse that same service.
+A critical architectural point is that the mathematical balancing logic is centralized in **`src/domain/services/BalanceTeamsService.ts`**. The current user-facing path is the prefix command `!sort`. Slash handlers exist in the codebase, but chat-input interactions are currently rejected in prefix-only mode.
 
 ---
 
@@ -42,9 +44,9 @@ A critical architectural point is that the mathematical balancing logic is centr
 ### Important clarification
 `!sort` **does not physically move users into voice channels**. It computes and stores the assignment, then sends an embed. The actual movement step is performed later by `!go` in `src/factory/commands/game/GoCommand.ts` via `getMatchSession()`.
 
-## 2.2 Shared slash-command path (`/sort`)
+## 2.2 Slash-command implementation status (`/sort`)
 
-The slash command path in `src/app/interactions/slash-commands/onSortCommand.ts` performs the same orchestration steps and ultimately calls the same `SortPlayersUseCase` and `balancePlayersIntoTeams()` service. Therefore, any algorithmic finding in this document applies to both interfaces.
+There is a slash-command implementation under `src/app/interactions/slash-commands/onSortCommand.ts`, and it targets the same `SortPlayersUseCase`. However, `src/app/events/interactionCreate.ts` currently runs in prefix-only mode and replies with `errors.prefixOnlyCommands` for chat-input interactions. In practice, the active production flow analyzed here is the prefix `!sort` path.
 
 ---
 
@@ -106,7 +108,7 @@ Inside `getOrCreateAllPlayers()`:
   - `externalId`
   - `displayName`
   - `rank`
-- Existing metadata such as `support`, `carry`, and `tank` is **not used** in the balancing logic.
+- Player attributes are used indirectly through `MatchRulesProvider` and constraint seeding when the selected team size requires role coverage.
 
 ---
 
@@ -128,11 +130,10 @@ Each sortable player is transformed into:
    - The algorithm does not treat rank categories differently.
    - It does not model confidence intervals, recent performance, role preference, or uncertainty.
 
-2. **Rank is the only balancing signal.**
-   - No role balancing.
-   - No lane composition control.
-   - No duo/party separation.
-   - No historical anti-rematch logic.
+2. **Rank is the primary score signal, but not the only placement signal.**
+   - Role constraints from `src/config/gameRules.ts` can require carry, support, and tank coverage by team size.
+   - Constraint seeding uses numeric attribute proficiency thresholds greater than `0`.
+   - The algorithm still does not model parties, anti-rematch rules, or full composition search.
 
 3. **The balancer may perturb rank slightly through noise.**
    - Controlled by `appConfig.sort.noise`.
@@ -206,17 +207,21 @@ This means:
 5. **Pre-create team buckets with fixed capacities**
    - `createTeamBuckets()` defines how many players each team may hold.
 
-6. **Assign one player at a time**
-   - For each ranked player, the algorithm chooses the currently best target team through `selectNextTeam()`.
+6. **Resolve and seed constraints first**
+   - `SortPlayersUseCase` obtains role constraints from `MatchRulesProvider`.
+   - `seedTeamsForConstraints()` assigns qualifying players to teams before the general greedy pass.
 
-7. **Selection rule**
+7. **Assign remaining players one at a time**
+   - For each unassigned ranked player, the algorithm chooses the currently best target team through `selectNextTeam()`.
+
+8. **Selection rule**
    - Only teams that are **not full** are eligible.
    - Eligible teams are sorted by:
      1. **lowest current total score first**
      2. then **fewest players first**
    - If multiple teams are still identical on both values, one is chosen randomly.
 
-8. **Commit assignment immediately**
+9. **Commit assignment immediately**
    - The player is appended to that team.
    - The team score is increased immediately by that player’s `effectiveRank`.
    - There is **no backtracking** and **no swap optimization pass** afterward.
@@ -227,8 +232,10 @@ This means:
 players = shuffle(players)
 rankedPlayers = sortDescendingByEffectiveRank(players)
 teams = createTeamsWithCapacities(teamCount, playerCount)
+seedTeamsForConstraints(rankedPlayers, teams)
 
 for each player in rankedPlayers:
+   skip already-assigned constrained players
     targetTeam = lowestScoreNonFullTeam()
     targetTeam.add(player)
     targetTeam.score += player.effectiveRank
@@ -240,6 +247,8 @@ return teams
 This is best described as:
 
 > **Greedy descending rank assignment with randomized tie-breaking and optional rank noise**.
+
+More precisely in the current code, it is a greedy descending assignment with an earlier role-constraint seeding step.
 
 ---
 

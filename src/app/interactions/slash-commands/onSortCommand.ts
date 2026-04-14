@@ -129,19 +129,11 @@ export async function onSortCommand(
   });
 
   const [primaryTeam, secondaryTeam] = result.teams;
-  const team1 = primaryTeam?.players ?? [];
-  const team2 = secondaryTeam?.players ?? [];
-  const score1 = primaryTeam?.score ?? 0;
-  const score2 = secondaryTeam?.score ?? 0;
   const playersById = new Map(sortablePlayers.map((player) => [player.id, player]));
 
   const sortId = addSort({
     sessionId: result.sessionId,
     teams: result.teams,
-    team1,
-    team2,
-    score1,
-    score2,
     timestamp: result.createdAt,
   });
 

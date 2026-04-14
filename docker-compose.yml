@@ -33,6 +33,7 @@ services:
       TEAM_1_CHANNEL_ID: ${TEAM_1_CHANNEL_ID:-}
       TEAM_2_CHANNEL_ID: ${TEAM_2_CHANNEL_ID:-}
       TEAM_CHANNEL_IDS_JSON: ${TEAM_CHANNEL_IDS_JSON:-}
+      PLAYER_SEED_FILE: ${PLAYER_SEED_FILE:-seeds/example.players.json}
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: botuser

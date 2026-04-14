@@ -5,25 +5,8 @@ interface ColumnRow extends RowDataPacket {
   COLUMN_NAME: string;
 }
 
-const DEFAULT_ATTRIBUTE_PROFICIENCY = 50;
-
-function buildLegacyFlagExpression(
-  availableColumns: Set<string>,
-  preferredColumn: string
-): string {
-  if (availableColumns.has(preferredColumn)) {
-    return `IFNULL(\`${preferredColumn}\`, 0)`;
-  }
-
-  return '0';
-}
-
-function resolveDeprecatedTankColumnName(
-  availableColumns: Set<string>
-): string | undefined {
-  return [...availableColumns].find(
-    (columnName) => /^tan.*e$/u.test(columnName) && columnName !== 'tank'
-  );
+function quoteIdentifier(identifier: string): string {
+  return `\`${identifier.replace(/`/gu, '``')}\``;
 }
 
 export async function ensurePlayerTableSchema(tableName: string): Promise<void> {
@@ -43,36 +26,15 @@ export async function ensurePlayerTableSchema(tableName: string): Promise<void> 
     [tableName]
   );
 
-  const availableColumns = new Set(columns.map((column) => column.COLUMN_NAME));
-
-  if (!availableColumns.has('attributes')) {
-    await db.query(`ALTER TABLE \`${tableName}\` ADD COLUMN attributes JSON NULL`);
-    availableColumns.add('attributes');
-  }
-
-  const deprecatedTankColumn = resolveDeprecatedTankColumnName(availableColumns);
-
-  if (deprecatedTankColumn) {
-    await db.query(`ALTER TABLE \`${tableName}\` DROP COLUMN \`${deprecatedTankColumn}\``);
-    availableColumns.delete(deprecatedTankColumn);
+  if (!columns.some((column) => column.COLUMN_NAME === 'attributes')) {
+    await db.query(
+      `ALTER TABLE ${quoteIdentifier(tableName)} ADD COLUMN attributes JSON NULL`
+    );
   }
 
   await db.query(`ALTER TABLE \`${tableName}\` MODIFY COLUMN \`rank\` DECIMAL(4,2)`);
 
-  const supportFlagExpression = buildLegacyFlagExpression(
-    availableColumns,
-    'support'
+  await db.query(
+    `UPDATE ${quoteIdentifier(tableName)} SET attributes = JSON_OBJECT() WHERE attributes IS NULL`
   );
-  const tankFlagExpression = buildLegacyFlagExpression(availableColumns, 'tank');
-  const carryFlagExpression = buildLegacyFlagExpression(availableColumns, 'carry');
-
-  await db.query(`
-    UPDATE \`${tableName}\`
-    SET attributes = JSON_OBJECT(
-      'support', JSON_OBJECT('isActive', ${supportFlagExpression} <> 0, 'proficiency', ${DEFAULT_ATTRIBUTE_PROFICIENCY}),
-      'tank', JSON_OBJECT('isActive', ${tankFlagExpression} <> 0, 'proficiency', ${DEFAULT_ATTRIBUTE_PROFICIENCY}),
-      'carry', JSON_OBJECT('isActive', ${carryFlagExpression} <> 0, 'proficiency', ${DEFAULT_ATTRIBUTE_PROFICIENCY})
-    )
-    WHERE attributes IS NULL
-  `);
 }

@@ -1,7 +1,6 @@
 import { GuildMember } from 'discord.js';
 import { appConfig } from '@src/config/app-config';
 import {
-  createDefaultPlayerAttributes,
   normalizePlayerAttributes,
   type Player,
 } from '@src/domain/models/Player';
@@ -40,7 +39,7 @@ export async function getOrCreateAllPlayers(
       externalId: member.id,
       displayName: member.user.username,
       rank: appConfig.rank.defaultValue,
-      attributes: createDefaultPlayerAttributes(),
+      attributes: {},
     });
 
     playerMap[savedPlayer.id] = toPlayerInfo(savedPlayer);

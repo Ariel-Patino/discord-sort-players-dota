@@ -5,6 +5,7 @@ import {
   StringSelectMenuBuilder,
   type MessageActionRowComponentBuilder,
 } from 'discord.js';
+import { activeMatchmakingStrategy } from '@src/config/matchmaking-strategy';
 import { formatAttributeLabel } from '@src/presentation/discord/AttributeFormatter';
 import type PlayerInfo from '@src/types/playersInfo';
 import type { SetAttributeSession } from '@src/state/setAttributeSessions';
@@ -12,34 +13,34 @@ import type { SetAttributeSession } from '@src/state/setAttributeSessions';
 const MAX_MENU_OPTIONS = 25;
 const MAX_BUTTONS_PER_ROW = 5;
 const MAX_ATTRIBUTE_BUTTONS = 20;
-const FALLBACK_ATTRIBUTE_NAMES = ['support', 'carry', 'tank'] as const;
 
 function orderAttributeNames(attributeNames: string[]): string[] {
-  const normalizedNames = [...new Set(attributeNames.map((name) => name.trim().toLowerCase()))]
-    .filter(Boolean);
-
-  return [
-    ...FALLBACK_ATTRIBUTE_NAMES.filter((name) => normalizedNames.includes(name)),
-    ...normalizedNames
-      .filter((name) => !FALLBACK_ATTRIBUTE_NAMES.includes(name as (typeof FALLBACK_ATTRIBUTE_NAMES)[number]))
-      .sort((left, right) => left.localeCompare(right)),
-  ];
+  return [...new Set(attributeNames.map((name) => name.trim().toLowerCase()))]
+    .filter(Boolean)
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function resolveRelevantAttributeNames(
   session: SetAttributeSession,
   playerMap: Record<string, PlayerInfo>
 ): string[] {
+  const strategyAttributeNames = activeMatchmakingStrategy.getAvailableAttributes();
   const selectedPlayers = session.selectedPlayerIds
     .map((playerId) => playerMap[playerId])
     .filter((player): player is PlayerInfo => Boolean(player));
 
   if (selectedPlayers.length === 0) {
-    return [...FALLBACK_ATTRIBUTE_NAMES];
+    return orderAttributeNames([
+      ...strategyAttributeNames,
+      ...Object.values(playerMap).flatMap((player) => Object.keys(player.attributes)),
+    ]);
   }
 
   if (selectedPlayers.length === 1) {
-    return orderAttributeNames(Object.keys(selectedPlayers[0].attributes));
+    return orderAttributeNames([
+      ...strategyAttributeNames,
+      ...Object.keys(selectedPlayers[0].attributes),
+    ]);
   }
 
   const attributeGroups = selectedPlayers.map(
@@ -51,12 +52,13 @@ function resolveRelevantAttributeNames(
   );
 
   if (commonNames.length > 0) {
-    return orderAttributeNames(commonNames);
+    return orderAttributeNames([...strategyAttributeNames, ...commonNames]);
   }
 
-  return orderAttributeNames(
-    selectedPlayers.flatMap((player) => Object.keys(player.attributes))
-  );
+  return orderAttributeNames([
+    ...strategyAttributeNames,
+    ...selectedPlayers.flatMap((player) => Object.keys(player.attributes)),
+  ]);
 }
 
 function resolveAttributeButtonStyle(
@@ -73,8 +75,8 @@ function resolveAttributeButtonStyle(
   }
 
   const activeCount = selectedPlayers.filter((player) => {
-    const attribute = player.attributes[attributeName];
-    return Boolean(attribute?.isActive) && Number(attribute?.proficiency ?? 0) > 0;
+    const attributeValue = Number(player.attributes[attributeName] ?? 0);
+    return attributeValue > 0;
   }).length;
 
   if (activeCount === selectedPlayers.length) {
@@ -101,6 +103,7 @@ export function buildSetAttributePrompt(
   return [
     'Select one or more players from voice chat, then use the buttons below to toggle or add attributes.',
     '',
+    `**Strategy:** ${activeMatchmakingStrategy.getDisplayName()}`,
     `**Selected players:** ${selectedLabels.length > 0 ? selectedLabels.join(', ') : 'None yet'}`,
     `**Attributes shown:** ${attributeNames.length > 0 ? attributeNames.join(', ') : 'None yet'}`,
     ...(session.lastAction ? [`**Last action:** ${session.lastAction}`] : []),
