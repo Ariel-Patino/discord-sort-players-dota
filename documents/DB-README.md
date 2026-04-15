@@ -13,7 +13,7 @@ That means **your database survives normal container restarts**.
 
 Because of that:
 
-- changing `src/store/players.ts` does **not** automatically update existing rows in MySQL
+- changing your seed JSON file under `seeds/` does **not** automatically update existing rows in MySQL
 - running `docker compose up --build` again does **not** reset the database by itself
 - the seed script only inserts the initial players when the table is empty
 
@@ -66,7 +66,7 @@ Database initialized successfully with X players.
 
 Use this when:
 
-- you changed `src/store/players.ts`
+- you changed the configured seed JSON file
 - you changed the DB schema
 - you want to reseed the table from scratch
 - you want to remove old test data
@@ -99,7 +99,23 @@ What this does:
 docker compose up --build
 ```
 
-This creates a fresh MySQL volume and seeds the database again using the current contents of `src/store/players.ts`.
+This creates a fresh MySQL volume and seeds the database again using the JSON file configured through `PLAYER_SEED_FILE`.
+
+## Seed file location
+
+The repository now stores seed files under `seeds/`.
+
+Default example file:
+
+- `seeds/example.players.json`
+
+By default, Docker uses:
+
+```env
+PLAYER_SEED_FILE=seeds/example.players.json
+```
+
+You can point that variable to your own file with the same structure.
 
 ### Recommended quick reset sequence
 
@@ -159,8 +175,17 @@ or press `Ctrl + C`.
 If you want to add a new Discord user/player directly into the database, use:
 
 ```sql
-INSERT INTO players (id, dotaName, `rank`, support, tanque, carry)
-VALUES ('new_player_123', 'NewPlayer', 3.5, 1, 0, 1);
+INSERT INTO players (id, dotaName, `rank`, attributes)
+VALUES (
+	'new_player_123',
+	'NewPlayer',
+	3.50,
+	JSON_OBJECT(
+		'support', 70,
+		'tank', 0,
+		'carry', 85
+	)
+);
 ```
 
 ### Field meaning
@@ -168,15 +193,22 @@ VALUES ('new_player_123', 'NewPlayer', 3.5, 1, 0, 1);
 - `id`: the Discord username or identifier used by the bot
 - `dotaName`: the display name for Dota
 - `rank`: numeric skill/rank value
-- `support`: `1` for true, `0` for false
-- `tanque`: `1` for true, `0` for false
-- `carry`: `1` for true, `0` for false
+- `attributes`: JSON payload mapping each attribute name to a numeric proficiency from `0` to `100`
 
 ### Example
 
 ```sql
-INSERT INTO players (id, dotaName, `rank`, support, tanque, carry)
-VALUES ('sample.user', 'Sample', 4.0, 1, 0, 1);
+INSERT INTO players (id, dotaName, `rank`, attributes)
+VALUES (
+	'sample.user',
+	'Sample',
+	4.00,
+	JSON_OBJECT(
+		'support', 60,
+		'tank', 0,
+		'carry', 75
+	)
+);
 ```
 
 To confirm the insert worked:
@@ -199,11 +231,20 @@ SET `rank` = 4.5
 WHERE id = 'sample.user';
 ```
 
-### Update name and roles
+### Update name and attributes
 
 ```sql
 UPDATE players
-SET dotaName = 'Sample Pro', support = 0, tanque = 1, carry = 1
+SET dotaName = 'Sample Pro',
+		attributes = JSON_SET(
+			COALESCE(
+				attributes,
+				JSON_OBJECT()
+			),
+			'$.support', 0,
+			'$.tank', 80,
+			'$.carry', 65
+		)
 WHERE id = 'sample.user';
 ```
 
@@ -212,6 +253,17 @@ WHERE id = 'sample.user';
 ```sql
 SELECT * FROM players WHERE id = 'sample.user';
 ```
+
+### Schema migration note
+
+The current schema bootstrapping path in `src/infrastructure/persistence/playerSchema.ts` creates this canonical shape:
+
+- `id VARCHAR(255) PRIMARY KEY`
+- `dotaName VARCHAR(255)`
+- `rank DECIMAL(4,2)`
+- `attributes JSON`
+
+On startup, the application creates this shape directly and initializes missing `attributes` values with `JSON_OBJECT()`. No legacy role-column migration is performed anymore.
 
 ---
 
@@ -332,7 +384,7 @@ You can either:
 
 ## 11. Safest workflow when player data changes
 
-If you update `src/store/players.ts`, the safest beginner workflow is:
+If you update your configured seed JSON file, the safest beginner workflow is:
 
 ```bash
 docker compose down -v

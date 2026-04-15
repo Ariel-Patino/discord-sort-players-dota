@@ -1,5 +1,9 @@
-import type { SortResultTeam } from '@src/domain/dto/SortResult';
+import type {
+  SortResultTeam,
+  TeamRoleAssignment,
+} from '@src/domain/dto/SortResult';
 import type { Player } from '@src/domain/models/Player';
+import type { MatchConstraint } from './IMatchmakingStrategy';
 
 export interface SortNoiseOptions {
   enabled?: boolean;
@@ -12,6 +16,7 @@ export interface BalanceTeamsOptions {
   random?: () => number;
   teamCount?: number;
   teamNames?: string[];
+  constraints?: MatchConstraint[];
 }
 
 interface RankedPlayer {
@@ -20,8 +25,14 @@ interface RankedPlayer {
   randomizedOrder: number;
 }
 
+interface ConstraintCandidate {
+  rankedPlayer: RankedPlayer;
+  usedFallback: boolean;
+}
+
 interface TeamBucket extends SortResultTeam {
   capacity: number;
+  roleAssignments: TeamRoleAssignment[];
 }
 
 export function balancePlayersIntoTeams(
@@ -46,18 +57,239 @@ export function balancePlayersIntoTeams(
       left.randomizedOrder - right.randomizedOrder
   );
   const teams = createTeamBuckets(teamCount, players.length, options.teamNames);
+  const playersById = new Map(rankedPlayers.map((entry) => [entry.player.id, entry.player]));
+  const assignedPlayerIds = new Set<string>();
+
+  seedTeamsForConstraints(
+    rankedPlayers,
+    teams,
+    playersById,
+    options.constraints ?? [],
+    assignedPlayerIds,
+    random
+  );
 
   for (const rankedPlayer of rankedPlayers) {
+    if (assignedPlayerIds.has(rankedPlayer.player.id)) {
+      continue;
+    }
+
     const targetTeam = selectNextTeam(teams, random);
-    targetTeam.players.push(rankedPlayer.player.id);
-    targetTeam.score += rankedPlayer.effectiveRank;
+    assignPlayerToTeam(targetTeam, rankedPlayer);
+    assignedPlayerIds.add(rankedPlayer.player.id);
   }
 
   return teams.map(({ capacity, ...team }) => ({
     ...team,
     players: [...team.players],
     score: team.score,
+    roleAssignments: team.roleAssignments.map((assignment) => ({
+      ...assignment,
+    })),
   }));
+}
+
+function seedTeamsForConstraints(
+  rankedPlayers: RankedPlayer[],
+  teams: TeamBucket[],
+  playersById: Map<string, Player>,
+  constraints: MatchConstraint[],
+  assignedPlayerIds: Set<string>,
+  random: () => number
+): void {
+  for (const constraint of constraints) {
+    for (let slot = 0; slot < constraint.minCount; slot += 1) {
+      const targetTeams = orderTeamsForConstraint(
+        teams,
+        playersById,
+        constraint,
+        random
+      );
+
+      for (const team of targetTeams) {
+        const candidate = selectConstraintCandidate(
+          rankedPlayers,
+          assignedPlayerIds,
+          constraint
+        );
+
+        if (!candidate) {
+          break;
+        }
+
+        assignPlayerToTeam(team, candidate.rankedPlayer);
+        recordRoleAssignment(
+          team,
+          candidate.rankedPlayer.player.id,
+          constraint,
+          candidate.usedFallback
+        );
+        assignedPlayerIds.add(candidate.rankedPlayer.player.id);
+      }
+    }
+  }
+}
+
+function orderTeamsForConstraint(
+  teams: TeamBucket[],
+  playersById: Map<string, Player>,
+  constraint: MatchConstraint,
+  random: () => number
+): TeamBucket[] {
+  const pendingTeams = teams.filter(
+    (team) =>
+      team.players.length < team.capacity &&
+      countConstraintMatchesInTeam(team, playersById, constraint) <
+        constraint.minCount
+  );
+  const orderedTeams: TeamBucket[] = [];
+
+  while (pendingTeams.length > 0) {
+    const nextTeam = selectNextTeam(pendingTeams, random);
+    orderedTeams.push(nextTeam);
+
+    const nextIndex = pendingTeams.findIndex(
+      (team) => team.teamId === nextTeam.teamId
+    );
+
+    if (nextIndex >= 0) {
+      pendingTeams.splice(nextIndex, 1);
+    }
+  }
+
+  return orderedTeams;
+}
+
+function countConstraintMatchesInTeam(
+  team: TeamBucket,
+  playersById: Map<string, Player>,
+  constraint: MatchConstraint
+): number {
+  return team.players.reduce((count, playerId) => {
+    const player = playersById.get(playerId);
+    return count + (player && playerMatchesConstraint(player, constraint) ? 1 : 0);
+  }, 0);
+}
+
+function selectConstraintCandidate(
+  rankedPlayers: RankedPlayer[],
+  assignedPlayerIds: Set<string>,
+  constraint: MatchConstraint
+): ConstraintCandidate | null {
+  let bestQualifiedCandidate: RankedPlayer | null = null;
+  let bestFallbackCandidate: RankedPlayer | null = null;
+
+  for (const rankedPlayer of rankedPlayers) {
+    if (assignedPlayerIds.has(rankedPlayer.player.id)) {
+      continue;
+    }
+
+    if (playerMatchesConstraint(rankedPlayer.player, constraint)) {
+      if (
+        !bestQualifiedCandidate ||
+        isBetterConstraintCandidate(
+          rankedPlayer,
+          bestQualifiedCandidate,
+          constraint
+        )
+      ) {
+        bestQualifiedCandidate = rankedPlayer;
+      }
+
+      continue;
+    }
+
+    if (
+      playerCanFallbackForConstraint(rankedPlayer.player, constraint) &&
+      (!bestFallbackCandidate ||
+        isBetterConstraintCandidate(
+          rankedPlayer,
+          bestFallbackCandidate,
+          constraint
+        ))
+    ) {
+      bestFallbackCandidate = rankedPlayer;
+    }
+  }
+
+  if (bestQualifiedCandidate) {
+    return {
+      rankedPlayer: bestQualifiedCandidate,
+      usedFallback: false,
+    };
+  }
+
+  if (bestFallbackCandidate) {
+    return {
+      rankedPlayer: bestFallbackCandidate,
+      usedFallback: true,
+    };
+  }
+
+  return null;
+}
+
+function isBetterConstraintCandidate(
+  candidate: RankedPlayer,
+  currentBest: RankedPlayer,
+  constraint: MatchConstraint
+): boolean {
+  const candidateProficiency = Number(
+    candidate.player.attributes[constraint.attribute] ?? 0
+  );
+  const currentProficiency = Number(
+    currentBest.player.attributes[constraint.attribute] ?? 0
+  );
+
+  return (
+    candidateProficiency > currentProficiency ||
+    (candidateProficiency === currentProficiency &&
+      (candidate.effectiveRank > currentBest.effectiveRank ||
+        (candidate.effectiveRank === currentBest.effectiveRank &&
+          candidate.randomizedOrder < currentBest.randomizedOrder)))
+  );
+}
+
+function playerMatchesConstraint(player: Player, constraint: MatchConstraint): boolean {
+  const attributeValue = Number(player.attributes[constraint.attribute] ?? 0);
+
+  return attributeValue > constraint.minProficiency;
+}
+
+function playerCanFallbackForConstraint(
+  player: Player,
+  constraint: MatchConstraint
+): boolean {
+  return Number(player.attributes[constraint.attribute] ?? 0) > 0;
+}
+
+function assignPlayerToTeam(team: TeamBucket, rankedPlayer: RankedPlayer): void {
+  team.players.push(rankedPlayer.player.id);
+  team.score += rankedPlayer.effectiveRank;
+}
+
+function recordRoleAssignment(
+  team: TeamBucket,
+  playerId: string,
+  constraint: MatchConstraint,
+  usedFallback: boolean
+): void {
+  if (
+    team.roleAssignments.some(
+      (assignment) =>
+        assignment.playerId === playerId &&
+        assignment.attribute === constraint.attribute
+    )
+  ) {
+    return;
+  }
+
+  team.roleAssignments.push({
+    playerId,
+    attribute: constraint.attribute,
+    constraintId: constraint.id,
+    usedFallback,
+  });
 }
 
 function normalizeTeamCount(teamCount: number): number {
@@ -81,6 +313,7 @@ function createTeamBuckets(
     teamName: resolveTeamName(index, teamNames),
     players: [],
     score: 0,
+    roleAssignments: [],
     capacity: baseCapacity + (index < remainder ? 1 : 0),
   }));
 }
@@ -100,7 +333,8 @@ function selectNextTeam(
   const availableTeams = teams.filter((team) => team.players.length < team.capacity);
 
   availableTeams.sort(
-    (left, right) => left.score - right.score || left.players.length - right.players.length
+    (left, right) =>
+      left.score - right.score || left.players.length - right.players.length
   );
 
   const [selectedTeam] = availableTeams;
@@ -115,7 +349,10 @@ function selectNextTeam(
       team.players.length === selectedTeam.players.length
   );
 
-  return equallyBalancedTeams[Math.floor(random() * equallyBalancedTeams.length)] ?? selectedTeam;
+  return (
+    equallyBalancedTeams[Math.floor(random() * equallyBalancedTeams.length)] ??
+    selectedTeam
+  );
 }
 
 function shufflePlayers(players: Player[], random: () => number): Player[] {

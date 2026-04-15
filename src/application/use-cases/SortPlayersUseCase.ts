@@ -1,16 +1,22 @@
 import type { SortResult } from '@src/domain/dto/SortResult';
 import type { Player } from '@src/domain/models/Player';
-import {
-  balancePlayersIntoTeams,
-  type BalanceTeamsOptions,
-  type SortNoiseOptions,
-} from '@src/domain/services/BalanceTeamsService';
+import { activeMatchmakingStrategy } from '@src/config/matchmaking-strategy';
+import type {
+  IMatchmakingStrategy,
+  MatchmakingNoiseOptions,
+  MatchmakingStrategyOptions,
+} from '@src/domain/services/IMatchmakingStrategy';
 
-export interface SortPlayersUseCaseOptions extends BalanceTeamsOptions {
+export interface SortPlayersUseCaseOptions extends MatchmakingStrategyOptions {
   sessionIdFactory?: () => string;
 }
 
 export default class SortPlayersUseCase {
+  constructor(
+    private readonly matchmakingStrategy: IMatchmakingStrategy =
+      activeMatchmakingStrategy
+  ) {}
+
   execute(
     players: Player[],
     options: SortPlayersUseCaseOptions = {}
@@ -24,7 +30,7 @@ export default class SortPlayersUseCase {
     const sessionIdFactory =
       options.sessionIdFactory ??
       (() => `sort-${createdAt}-${Math.floor(random() * 1_000_000)}`);
-    const teams = balancePlayersIntoTeams(players, {
+    const matchmakingResult = this.matchmakingStrategy.calculateTeamBalance(players, {
       noise: options.noise,
       random,
       teamCount: options.teamCount,
@@ -34,9 +40,10 @@ export default class SortPlayersUseCase {
     return {
       sessionId: sessionIdFactory(),
       createdAt,
-      teams,
+      teams: matchmakingResult.teams,
+      constraints: matchmakingResult.constraints,
     };
   }
 }
 
-export type { SortNoiseOptions };
+export type { MatchmakingNoiseOptions as SortNoiseOptions };

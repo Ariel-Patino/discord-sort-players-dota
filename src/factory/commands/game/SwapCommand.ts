@@ -1,6 +1,7 @@
 import { getAllPlayers } from '@src/services/players.service';
 import { t } from '@src/localization';
 import EmbedFactory from '@src/presentation/discord/embeds';
+import { formatTeamPlayersFromRecord } from '@src/presentation/discord/team-player-list';
 import { setMatchSession } from '@src/state/teams';
 import { addSort, getAllSorts, getSort } from '@src/store/sortHistory';
 import PlayerInfo from '@src/types/playersInfo';
@@ -14,7 +15,7 @@ export default class SwapCommand extends Command {
   async execute(): Promise<void> {
     const parts = this.command.trim().split(/\s+/);
     if (parts.length < 3) {
-      this.chatChannel.channel.send('Swap format: `!swap <sentinel position> <scourge position>`');
+      this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
       return;
     }
 
@@ -35,7 +36,7 @@ export default class SwapCommand extends Command {
     if (!isDash1) {
       pos1 = parseInt(arg1, 10);
       if (isNaN(pos1) || pos1 <= 0) {
-        this.chatChannel.channel.send('Swap format: `!swap <sentinel position> <scourge position>`');
+        this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
         return;
       }
     }
@@ -43,7 +44,7 @@ export default class SwapCommand extends Command {
     if (!isDash2) {
       pos2 = parseInt(arg2, 10);
       if (isNaN(pos2) || pos2 <= 0) {
-        this.chatChannel.channel.send('Swap format: `!swap <sentinel position> <scourge position>`');
+        this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
         return;
       }
     }
@@ -76,8 +77,8 @@ export default class SwapCommand extends Command {
 
     const firstTeamLabel = lastSort.teams[0]?.teamName ?? 'Team 1';
     const secondTeamLabel = lastSort.teams[1]?.teamName ?? 'Team 2';
-    const team1 = [...lastSort.team1];
-    const team2 = [...lastSort.team2];
+  const team1 = [...(lastSort.teams[0]?.players ?? [])];
+  const team2 = [...(lastSort.teams[1]?.players ?? [])];
 
     if (!isDash1 && !isDash2) {
       const index1 = (pos1 as number) - 1;
@@ -150,10 +151,6 @@ export default class SwapCommand extends Command {
     const sortId = addSort({
       sessionId: lastSort.sessionId,
       teams: updatedTeams,
-      team1,
-      team2,
-      score1,
-      score2,
       timestamp: Date.now(),
     });
 
@@ -179,7 +176,7 @@ export default class SwapCommand extends Command {
             score: score1Formatted,
           }),
           score: score1Formatted,
-          players: this.formatTeam(team1, players),
+          players: formatTeamPlayersFromRecord(team1, players),
         },
         {
           name: t('commands.sort.teamField', {
@@ -187,7 +184,7 @@ export default class SwapCommand extends Command {
             score: score2Formatted,
           }),
           score: score2Formatted,
-          players: this.formatTeam(team2, players),
+          players: formatTeamPlayersFromRecord(team2, players),
         },
       ],
     });
@@ -219,15 +216,4 @@ export default class SwapCommand extends Command {
     return total;
   }
 
-
-  private formatTeam(teamUsernames: string[], players: Record<string, PlayerInfo>) {
-    return teamUsernames
-      .map((username, index) => {
-        const info = players[username];
-        return info
-          ? `   ${index + 1}. ${info.dotaName} (R${info.rank})`
-          : `   ${index + 1}. ${username} (${t('common.unknownPlayer')})`;
-      })
-      .join('\n');
-  }
 }

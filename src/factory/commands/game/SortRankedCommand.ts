@@ -4,6 +4,7 @@ import { appConfig } from '@src/config/app-config';
 import type { Player } from '@src/domain/models/Player';
 import { t } from '@src/localization';
 import EmbedFactory from '@src/presentation/discord/embeds';
+import { formatTeamPlayersFromMap } from '@src/presentation/discord/team-player-list';
 import { resolveVoiceChannelTeamLabels } from '@src/presentation/discord/team-labels';
 import { BOT_TITLE } from '@src/shared/constants/branding';
 import { setMatchSession } from '@src/state/teams';
@@ -51,6 +52,7 @@ export default class SortRankedCommand extends Command {
           externalId: member.id,
           displayName: playerInfo.dotaName || member.displayName,
           rank: Number(playerInfo.rank ?? 0),
+          attributes: playerInfo.attributes,
         };
       })
       .filter((player): player is Player => player !== null);
@@ -77,19 +79,11 @@ export default class SortRankedCommand extends Command {
     });
 
     const [primaryTeam, secondaryTeam] = result.teams;
-    const team1 = primaryTeam?.players ?? [];
-    const team2 = secondaryTeam?.players ?? [];
-    const score1 = primaryTeam?.score ?? 0;
-    const score2 = secondaryTeam?.score ?? 0;
     const playersById = new Map(sortablePlayers.map((player) => [player.id, player]));
 
     const sortId = addSort({
       sessionId: result.sessionId,
       teams: result.teams,
-      team1,
-      team2,
-      score1,
-      score2,
       timestamp: result.createdAt,
     });
 
@@ -113,7 +107,11 @@ export default class SortRankedCommand extends Command {
           score: team.score.toFixed(1).padStart(4, '0'),
         }),
         score: team.score.toFixed(1).padStart(4, '0'),
-        players: this.formatTeam(team.players, playersById),
+        players: formatTeamPlayersFromMap(
+          team.players,
+          playersById,
+          team.roleAssignments
+        ),
       })),
     });
 
@@ -171,17 +169,4 @@ export default class SortRankedCommand extends Command {
     return requestedCount;
   }
 
-  private formatTeam(
-    teamPlayerIds: string[],
-    playersById: Map<string, Player>
-  ): string {
-    return teamPlayerIds
-      .map((playerId, index) => {
-        const player = playersById.get(playerId);
-        return player
-          ? `   ${index + 1}. ${player.displayName} (R${player.rank})`
-          : `   ${index + 1}. ${playerId} (${t('common.unknownPlayer')})`;
-      })
-      .join('\n');
-  }
 }

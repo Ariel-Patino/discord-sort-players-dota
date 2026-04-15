@@ -1,8 +1,11 @@
+import type { TeamRoleAssignment } from '@src/domain/dto/SortResult';
+
 export interface TeamAssignment {
   teamId: string;
   teamName: string;
   players: string[];
   score: number;
+  roleAssignments?: TeamRoleAssignment[];
 }
 
 export interface MatchSession {
@@ -26,28 +29,10 @@ function cloneTeamAssignment(team: TeamAssignment): TeamAssignment {
   return {
     ...team,
     players: [...team.players],
+    roleAssignments: team.roleAssignments?.map((assignment) => ({
+      ...assignment,
+    })),
   };
-}
-
-export function createTeamAssignments(
-  team1: string[],
-  team2: string[],
-  scores: [number, number] = [0, 0]
-): TeamAssignment[] {
-  return [
-    {
-      teamId: DEFAULT_TEAM_DEFINITIONS[0].teamId,
-      teamName: DEFAULT_TEAM_DEFINITIONS[0].teamName,
-      players: [...team1],
-      score: scores[0],
-    },
-    {
-      teamId: DEFAULT_TEAM_DEFINITIONS[1].teamId,
-      teamName: DEFAULT_TEAM_DEFINITIONS[1].teamName,
-      players: [...team2],
-      score: scores[1],
-    },
-  ];
 }
 
 export function setMatchSession(session: MatchSession): void {
@@ -63,23 +48,6 @@ export function getMatchSession(): MatchSession {
     sessionId: currentMatchSession.sessionId,
     createdAt: currentMatchSession.createdAt,
     teams: currentMatchSession.teams.map(cloneTeamAssignment),
-  };
-}
-
-export function setTeams(team1: string[], team2: string[]): void {
-  setMatchSession({
-    sessionId: `match-${Date.now()}`,
-    createdAt: Date.now(),
-    teams: createTeamAssignments(team1, team2),
-  });
-}
-
-export function getTeams(): { sentinel: string[]; scourge: string[] } {
-  const [sentinelTeam, scourgeTeam] = getMatchSession().teams;
-
-  return {
-    sentinel: sentinelTeam?.players ?? [],
-    scourge: scourgeTeam?.players ?? [],
   };
 }
 

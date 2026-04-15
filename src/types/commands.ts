@@ -8,5 +8,6 @@ type Commands =
   | '!help'
   | '!swap'
   | '!setrank'
+  | '!setattribute'
   | '!move';
 export default Commands;

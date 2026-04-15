@@ -9,6 +9,7 @@ import GoCommand from '../game/GoCommand';
 import HelpCommand from './HelpCommand';
 import SwapCommand from '../game/SwapCommand';
 import SetRankCommand from '../game/SetRankCommand';
+import SetAttributeCommand from '../game/SetAttributeCommand';
 import MoveCommand from '../game/MoveCommand';
 
 type CommandFactoryEntry = (
@@ -26,6 +27,8 @@ const commandRegistry: Record<Commands, CommandFactoryEntry> = {
   '!help': (command, chatChannel) => new HelpCommand(command, chatChannel),
   '!swap': (command, chatChannel) => new SwapCommand(command, chatChannel),
   '!setrank': (command, chatChannel) => new SetRankCommand(command, chatChannel),
+  '!setattribute': (command, chatChannel) =>
+    new SetAttributeCommand(command, chatChannel),
   '!move': (command, chatChannel) => new MoveCommand(command, chatChannel),
 };
 

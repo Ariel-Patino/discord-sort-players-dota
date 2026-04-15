@@ -1,7 +1,8 @@
 import { ChannelType, GuildMember, VoiceChannel } from 'discord.js';
-import { getAllPlayers } from '@src/services/players.service';
 import { t } from '@src/localization';
+import { formatPlayerAttributes } from '@src/presentation/discord/AttributeFormatter';
 import EmbedFactory from '@src/presentation/discord/embeds';
+import { getAllPlayers } from '@src/services/players.service';
 import PlayerInfo from '@src/types/playersInfo';
 import Command, { type CommandMessage } from '../main/Command';
 
@@ -33,9 +34,15 @@ export default class ListOnlinePlayersCommand extends Command {
 
     const lines = allVoiceMembers.map((member) => {
       const info = playerMap.get(member.user.username);
-      return info
-        ? `• ${info.dotaName} (R${info.rank})`
-        : `• ${member.user.username} (${t('common.unknownPlayer')})`;
+
+      if (!info) {
+        return `• ${member.user.username} (${t('common.unknownPlayer')})`;
+      }
+
+      const attributes = formatPlayerAttributes(info.attributes);
+      return attributes
+        ? `• ${info.dotaName} (R${info.rank}) — ${attributes}`
+        : `• ${info.dotaName} (R${info.rank})`;
     });
 
     const embed = EmbedFactory.info(

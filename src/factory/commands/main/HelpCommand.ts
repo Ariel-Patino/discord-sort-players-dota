@@ -28,6 +28,7 @@ export default class HelpCommand extends Command {
             '**`!list`** – Lists all connected players.',
             '**`!listall`** – Lists all players in DB.',
             `**\`!setrank\`** – Opens a dropdown to set a player rank (${formatRankBounds()}).`,
+            '**`!setattribute`** – Opens the attribute editor for voice players, or use `!setattribute carry 85` for a quick self-update.',
           ].join('\n'),
         },
         {

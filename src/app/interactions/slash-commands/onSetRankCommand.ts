@@ -1,6 +1,6 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
 import { normalizeRank } from '@src/config/app-config';
-import type { Player } from '@src/domain/models/Player';
+import { type Player } from '@src/domain/models/Player';
 import type { PlayerRepository } from '@src/domain/ports/PlayerRepository';
 import MySqlPlayerRepository from '@src/infrastructure/persistence/MySqlPlayerRepository';
 import { t } from '@src/localization';
@@ -32,6 +32,7 @@ export async function onSetRankCommand(
       externalId: user.id,
       displayName: user.username,
       rank,
+      attributes: {},
     };
 
     await playerRepository.save(newPlayer);

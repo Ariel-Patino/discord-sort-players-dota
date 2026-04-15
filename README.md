@@ -16,6 +16,8 @@ The following documents provide the detailed technical reference for the reposit
 - [`documents/FUNCTIONAL_GUIDE.md`](documents/FUNCTIONAL_GUIDE.md) — request/action lifecycle, data movement, and business logic flows
 - [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) — architectural classification, component relationships, and Mermaid diagrams
 - [`documents/DB-README.md`](documents/DB-README.md) — database reset, inspection, and manual maintenance instructions
+- [`documents/Commands_sort_go_swap_replay.md`](documents/Commands_sort_go_swap_replay.md) — current prefix-command flow for `!sort`, `!go`, `!swap`, and `!replay`
+- [`documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md`](documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md) — how to register, configure, and implement custom matchmaking strategies
 
 This `README.md` is intended to function as the primary entry point and summary guide.
 
@@ -59,6 +61,7 @@ Example:
 TOKEN=your-discord-bot-token
 DISCORD_APPLICATION_ID=your-application-id
 DISCORD_GUILD_ID=your-guild-id
+PLAYER_SEED_FILE=seeds/example.players.json
 TEAM_1_CHANNEL_ID=your-team-1-voice-channel-id
 TEAM_2_CHANNEL_ID=your-team-2-voice-channel-id
 TEAM_3_CHANNEL_ID=your-team-3-voice-channel-id
@@ -69,6 +72,7 @@ For the default Docker workflow, database values are already supplied by `docker
 
 > For multi-team matches, add as many `TEAM_<n>_CHANNEL_ID` variables as needed (for example `TEAM_3_CHANNEL_ID`, `TEAM_4_CHANNEL_ID`, and so on).
 > You can also provide a JSON map through `TEAM_CHANNEL_IDS_JSON`, for example `{"team-1":"123","team-2":"456","team-3":"789"}`.
+> Player seeds now live under `seeds/`. The repository includes `seeds/example.players.json` as a publishable example, and you can point `PLAYER_SEED_FILE` to your own file with the same format.
 
 ### 3. Start the full stack
 
@@ -127,12 +131,14 @@ The repository follows a **layered modular monolith** design with **event-driven
 ```text
 Discord event
   -> src/index.ts
-  -> command validation
-  -> CommandFactory dispatch
-  -> command/business logic execution
+  -> prefix command validation or interaction routing
+  -> CommandFactory dispatch or dedicated interaction handler
+  -> command/use-case execution
   -> DB and runtime-state interaction
   -> Discord response or voice action
 ```
+
+Slash command handlers exist in the codebase, but the runtime currently operates in prefix-only mode. Chat-input interactions are acknowledged with a "use the `!` prefix commands instead" response.
 
 ### Primary architectural layers
 
