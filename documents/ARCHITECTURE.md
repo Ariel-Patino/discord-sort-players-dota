@@ -1,6 +1,21 @@
 # ARCHITECTURE
 
+_Last verified: 2026-04-27_
+
+_Technology context: Built with Node.js runtime and TypeScript._
+
 _Detailed technical architecture reference for the current repository, including deployment topology, runtime structure, and Mermaid diagrams for the most important execution paths._
+
+## Available Diagrams
+
+- [Overall system architecture](#31-overall-system-architecture-diagram)
+- [Internal component architecture](#41-component-diagram)
+- [Startup and bootstrap sequence](#51-startup-and-bootstrap-sequence)
+- [Ranked sort sequence (`!sort`)](#52-ranked-sort-sequence-sort)
+- [Rank update interaction sequence (`!setrank` + modal flow)](#53-rank-update-interaction-sequence-setrank--modal-flow)
+- [Voice deployment sequence (`!go`)](#54-voice-deployment-sequence-go)
+- [Persistence ER diagram](#61-persistence-er-diagram)
+- [Core class diagram](#62-core-class-diagram)
 
 ## 1. Architectural Classification
 
@@ -383,7 +398,79 @@ erDiagram
 - `attributes` stores role metadata such as `support`, `tank`, and `carry` as numeric proficiency values from `0` to `100`.
 - The current balancing algorithm still optimizes by score, but it also seeds teams with role constraints from `src/config/gameRules.ts` when team sizes require them.
 
-## 6.2 Non-persistent runtime state
+## 6.2 Core class diagram
+
+The following class diagram captures the main domain, DTO, and persistence abstractions.
+
+```mermaid
+classDiagram
+    class Player {
+        +string id
+        +string externalId
+        +string displayName
+        +number rank
+        +PlayerAttributes attributes
+    }
+
+    class SortResult {
+        +string sessionId
+        +number createdAt
+        +SortResultTeam[] teams
+        +MatchConstraint[] constraints
+    }
+
+    class SortResultTeam {
+        +string teamId
+        +string teamName
+        +string[] players
+        +number score
+        +TeamRoleAssignment[] roleAssignments
+    }
+
+    class MatchSession {
+        +string sessionId
+        +number createdAt
+        +TeamAssignment[] teams
+    }
+
+    class TeamAssignment {
+        +string teamId
+        +string teamName
+        +string[] players
+        +number score
+        +TeamRoleAssignment[] roleAssignments
+    }
+
+    class PlayerRepository {
+        <<interface>>
+        +save(player: Player) Promise~Player~
+        +getById(id: string) Promise~Player|null~
+        +getAll() Promise~Player[]~
+        +updateRank(id: string, rank: number) Promise~void~
+    }
+
+    class MySqlPlayerRepository {
+        +save(player: Player) Promise~Player~
+        +getById(id: string) Promise~Player|null~
+        +getAll() Promise~Player[]~
+        +updateRank(id: string, rank: number) Promise~void~
+    }
+
+    PlayerRepository <|.. MySqlPlayerRepository
+    SortResult *-- SortResultTeam
+    MatchSession *-- TeamAssignment
+    PlayerRepository ..> Player
+    MySqlPlayerRepository ..> Player
+```
+
+### Class model notes
+
+- `Player` is the canonical runtime/domain player model used by balancing and update flows.
+- `SortResult` and `SortResultTeam` represent sort output persisted in in-memory history.
+- `MatchSession` and `TeamAssignment` represent active runtime team state used by deployment commands.
+- `PlayerRepository` defines the persistence contract; `MySqlPlayerRepository` is the current infrastructure implementation.
+
+## 6.3 Non-persistent runtime state
 
 Not all operational data is stored in MySQL.
 

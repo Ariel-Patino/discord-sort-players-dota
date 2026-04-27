@@ -1,5 +1,9 @@
 # Command Flow Analysis: !sort, !go, !swap, !replay
 
+_Last verified: 2026-04-27_
+
+_Technology context: Built with Node.js runtime and TypeScript._
+
 Scope: current prefix-command implementation in `src/` as of 2026-04-13.
 
 This document is based on the running code, not the older architecture notes.

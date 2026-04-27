@@ -12,16 +12,22 @@ export default class ReplaySortCommand extends Command {
     super(command, chatChannel);
   }
 
+  private sendReplayWarning(message: string): void {
+    this.chatChannel.channel.send({
+      embeds: [EmbedFactory.warning(t('commands.replay.commandTitle'), message)],
+    });
+  }
+
   async execute(): Promise<void> {
     const index = parseInt(this.command.split(' ')[1]) - 1;
     if (isNaN(index) || index < 0) {
-      this.chatChannel.channel.send('Replay format: `!replay <número>`');
+      this.sendReplayWarning(t('errors.replayFormat'));
       return;
     }
 
     const sort = getSort(index);
     if (!sort) {
-      this.chatChannel.channel.send(`Sort #${index + 1} not found`);
+      this.sendReplayWarning(t('errors.replayNotFound', { index: index + 1 }));
       return;
     }
 
@@ -58,5 +64,4 @@ export default class ReplaySortCommand extends Command {
 
     this.chatChannel.channel.send({ embeds: [embed] });
   }
-
 }

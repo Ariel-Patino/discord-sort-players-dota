@@ -1,5 +1,9 @@
 # Matchmaking Strategy Plugin Guide
 
+_Last verified: 2026-04-27_
+
+_Technology context: Built with Node.js runtime and TypeScript._
+
 This project now treats matchmaking as a pluggable strategy rather than a hardcoded game-specific rule set.
 
 ## Purpose

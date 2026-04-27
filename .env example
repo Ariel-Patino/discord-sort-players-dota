@@ -1,4 +1,7 @@
 TOKEN=your-discord-bot-token
+TEAM_1_CHANNEL_ID=
+TEAM_2_CHANNEL_ID=
+TEAM_N_CHANNEL_ID=
 
 # Optional local overrides (the Docker stack already provides sane defaults)
 # DB_HOST=mysql

@@ -1,5 +1,9 @@
 # PROJECT_MAP
 
+_Last verified: 2026-04-27_
+
+_Technology context: Built with Node.js runtime and TypeScript._
+
 _Preliminary repository map generated from the current source tree and project metadata._
 
 ## 1. Repository Overview
@@ -12,6 +16,29 @@ _Preliminary repository map generated from the current source tree and project m
 - a **TypeScript** codebase with linting and formatting support
 
 The repository appears to be maintained as a lightweight MIT-licensed application with a command-oriented internal structure.
+
+## 1.1 Portfolio Snapshot
+
+This repository can be presented as a production-style Node.js + TypeScript backend bot project.
+
+Highlights:
+
+- Event-driven modular monolith with clear architecture boundaries.
+- Command + use-case oriented organization for business logic.
+- Repository abstraction with MySQL adapter implementation.
+- Structured logging and centralized Discord error presentation.
+- Interactive Discord workflows using menus, buttons, and modals.
+- Docker-first runtime with automated database bootstrap and seed flow.
+- Test coverage for balancing and configuration-critical modules.
+
+Technology profile:
+
+- Runtime: Node.js
+- Language: TypeScript (strict)
+- Framework: discord.js
+- Database: MySQL 8 via mysql2
+- DevOps: Docker / Docker Compose
+- Quality tooling: ESLint, Prettier, Jest
 
 ---
 
@@ -234,7 +261,7 @@ From `tsconfig.json`:
 - The codebase is organized around **command execution**, with supporting service, store, and state layers.
 - The runtime combines **persistent database storage** with **in-memory session state**.
 - Documentation is already present for database reset and inspection in `documents/DB-README.md`; this file complements that guide by focusing on architecture and dependency mapping.
-- The repository includes an MIT `LICENSE` file, while `package.json` currently declares `ISC`. If package metadata consistency matters for downstream consumers, aligning those values may be helpful.
+- License metadata is aligned: `LICENSE` and `package.json` both declare MIT.
 
 ---
 

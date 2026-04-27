@@ -16,8 +16,8 @@
     "docker:logs": "docker compose logs -f bot"
   },
   "keywords": [],
-  "author": "Vulture255",
-  "license": "ISC",
+  "author": "Ariel Patino Flores <ariel.patino.f@gmail.com> (https://www.linkedin.com/in/Ariel-Patino)",
+  "license": "MIT",
   "description": "",
   "devDependencies": {
     "eslint": "^9.39.4",

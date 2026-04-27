@@ -1,528 +1,123 @@
 # IMPROVEMENTS
 
-_Comprehensive refactoring and improvement roadmap for the Discord Game Bot codebase, with emphasis on architectural decoupling, configuration hygiene, maintainability, and long-term open-source sustainability._
+_Last verified: 2026-04-27_
 
-_Status note (2026-04-13): this document remains a roadmap, not a literal snapshot. Several recommendations below have already been implemented in the codebase, including typed app configuration, localized user-facing strings, repository-backed player updates, and configured team-channel deployment._
+_Technology context: Built with Node.js runtime and TypeScript._
 
-## 1. Executive Summary
+_Living roadmap focused on architecture, maintainability, and delivery priorities for this repository._
 
-The current repository is functional and relatively compact, but the implementation is tightly centered on the Discord runtime and contains several forms of operational hardcoding. This is acceptable for a small, single-purpose bot, but it limits reuse, testability, multi-server adaptability, and long-term maintainability.
+## 1. Current Status
 
-The most important architectural findings are:
+This file remains relevant and should be kept.
 
-1. **Core game behavior is coupled directly to `discord.js` constructs** such as `Message`, `GuildMember`, `VoiceChannel`, component collectors, and embeds.
-2. **Business logic, transport logic, and presentation logic are mixed inside command classes** and, in some cases, directly in `src/index.ts`.
-3. **Key runtime assumptions are hardcoded** (channel naming conventions, ranking bounds, interaction timeouts, pagination size, sort-history limits, DB defaults, and balancing parameters).
-4. **The project structure is workable for a small codebase**, but it does not yet scale cleanly toward multiple event handlers, richer domain models, slash command registration, or independent test coverage.
-5. **The command model is based on prefix commands and direct `messageCreate` parsing**, which is a legacy operational pattern compared with modern Discord slash command workflows.
 
-For an MIT-licensed open-source project, the recommended direction is to evolve the codebase into a **layered application with a transport adapter for Discord, a clear domain/use-case layer, typed configuration, and a scalable folder structure**.
+### Implemented Foundations
 
----
-
-## 2. Current-State Assessment
-
-| Area | Current State | Risk / Cost | Improvement Priority |
-|---|---|---|---|
-| Discord coupling | Commands import and manipulate Discord-specific objects directly | High impact on testability and reuse | High |
-| Hardcoded operational rules | Some operational rules have moved into typed config, but Discord-specific assumptions still remain in command orchestration | Medium impact on portability and maintainability | High |
-| Command model | Prefix parsing through `messageCreate` and `CommandFactory` | Medium impact on UX and long-term Discord compatibility | High |
-| Runtime state | Teams and sort history are in-memory only | Medium impact on resilience and multi-instance support | Medium |
-| Type safety | Stronger than earlier revisions, but transport-neutral boundaries are still incomplete | Medium impact on correctness and refactoring speed | Medium |
-| Persistence abstraction | Persistence is now mostly routed through repositories and use cases, but command-side orchestration is still close to infrastructure | Medium impact on cohesion and layering | High |
-| Testability | No clear domain boundary for unit testing pure game behavior | High impact on quality confidence | High |
-
----
-
-## 3. Architectural Decoupling
-
-## 3.1 Where Discord-specific concerns are tightly coupled today
-
-The current codebase mixes Discord transport concerns and application logic in several locations.
-
-### Direct coupling points
-
-| File | Coupling Pattern | Observation |
+| Area | Status | Evidence |
 |---|---|---|
-| `src/index.ts` | Event orchestration and prefix-command ingress | The entry point is thinner than earlier revisions, but it still owns transport bootstrapping and prefix routing |
-| `src/factory/commands/main/Command.ts` | `chatChannel: any` injected into all commands | The command abstraction is tied to the Discord message context instead of a transport-neutral request object |
-| `src/factory/commands/game/SortRankedCommand.ts` | Uses `GuildMember`, `VoiceChannel`, and channel sends directly | Team balancing orchestration is still not fully isolated from Discord-side data access and response rendering |
-| `src/factory/commands/game/GoCommand.ts` | Direct voice-channel lookup and `member.voice.setChannel()` | The domain action "deploy teams" is implemented as Discord-specific side effects |
-| `src/factory/commands/game/MoveCommand.ts` | Message component collector and UI state are embedded inside the command | Transport/UI orchestration and use-case behavior are not separated |
-| `src/factory/commands/game/SetRankCommand.ts` + interaction handlers | UI creation and modal processing depend on Discord `customId` conventions | Application flow relies on Discord-specific identifier encoding |
-| `src/helpers/sort/retieveChatMembers.ts` | Uses `channel.reply()` internally | Even helpers perform transport-level output instead of returning structured errors |
-
-### Practical effect of the current coupling
-
-Because the domain behavior is mixed with Discord APIs:
-
-- the sorting algorithm cannot be unit-tested independently without mocking Discord structures
-- the bot cannot easily support alternative transport modes (CLI, HTTP admin panel, or another chat provider)
-- business rules are harder to reuse across multiple command styles (prefix commands, slash commands, scheduled jobs)
-- changes to Discord interaction structure can force modifications in otherwise unrelated application logic
-
-## 3.2 Recommended target architecture
-
-The recommended target is a **hexagonal / ports-and-adapters style layered architecture**, implemented pragmatically rather than dogmatically.
-
-### Target layers
-
-1. **Transport / Adapter Layer**
-   - Discord event handlers
-   - slash command registration
-   - interaction mapping
-   - embed and UI presentation building
+| Typed app configuration | Implemented | `src/config/app-config.ts`, `src/config/config-validation.test.ts` |
+| Matchmaking strategy plugin model | Implemented | `src/domain/services/IMatchmakingStrategy.ts`, `src/config/matchmaking-strategy.ts` |
+| Domain balancing service + tests | Implemented | `src/domain/services/BalanceTeamsService.ts`, `src/domain/services/BalanceTeamsService.test.ts` |
+| Application use-cases for rank/attributes | Implemented | `src/application/use-cases/UpdatePlayerRanksUseCase.ts`, `src/application/use-cases/UpdatePlayerAttributesUseCase.ts` |
+| Repository abstraction + MySQL adapter | Implemented | `src/domain/ports/PlayerRepository.ts`, `src/infrastructure/persistence/MySqlPlayerRepository.ts` |
+| Structured logging and process hooks | Implemented | `src/infrastructure/logging/Logger.ts`, `src/infrastructure/logging/process-hooks.ts` |
+| Interaction routing extraction from entrypoint | Implemented | `src/app/events/interactionCreate.ts` |
+| Command registry pattern | Implemented | `src/factory/commands/main/CommandFactory.ts` |
+| Team channel mapping via env and JSON | Implemented | `src/config/app-config.ts` (`readTeamChannelIdsFromEnv`) |
+| Docker-first startup with DB bootstrap | Implemented | `docker/start.sh`, `src/init-db.ts`, `docker-compose.yml` |
 
-2. **Application / Use-Case Layer**
-   - sort players
-   - replay last sort
-   - swap team positions
-   - move teams to channels
-   - update player rank
-   - list players
+## 2. Remaining High-Impact Gaps
 
-3. **Domain Layer**
-   - `Player`
-   - `Team`
-   - `SortResult`
-   - `MatchSession`
-   - ranking rules / balancing policy
+### 2.1 Consistency in user-facing responses
 
-4. **Infrastructure Layer**
-   - MySQL repositories
-   - configuration loading
-   - Discord API adapter implementation
-   - logging and persistence wiring
+Recent work already normalized the main outlier command paths (`SwapCommand` and `ReplaySortCommand`) to localized embed responses.
 
-## 3.3 Separation strategy
+Remaining effort is now incremental and should focus on keeping all future command branches aligned with the same response style.
 
-### Step 1: Introduce transport-neutral use cases
+### 2.2 Two-team limitation in manual roster adjustment
 
-Create service-level use cases such as:
+Sorting supports dynamic team counts, but `!swap` is explicitly two-team-only.
 
-- `SortPlayersUseCase`
-- `SwapPlayersUseCase`
-- `ReplaySortUseCase`
-- `DeployTeamsUseCase`
-- `UpdatePlayerRankUseCase`
-- `ListPlayersUseCase`
+Current behavior is valid for now, but limits full multi-team operational parity.
 
-Each use case should accept plain TypeScript input DTOs and return plain result objects, for example:
+### 2.3 Durability model
 
-```ts
-interface SortPlayersInput {
-  participants: Array<{ externalId: string; displayName: string }>;
-}
+`MatchSession` and sort history are process-local. This is acceptable for a single-instance deployment but has operational limits for restarts and horizontal scaling.
 
-interface SortPlayersOutput {
-  teamA: string[];
-  teamB: string[];
-  scoreA: number;
-  scoreB: number;
-  sortId: number;
-}
-```
+### 2.4 Identity normalization
 
-These use cases must not import `discord.js`.
+Some flows still depend on username-oriented identity assumptions. Stable Discord user IDs should remain the canonical identity key across all orchestration paths.
 
-### Step 2: Define ports/interfaces
+### 2.5 Transport strategy decision
 
-Introduce interfaces to represent external dependencies:
+Slash command assets exist and can be published, while runtime intentionally operates in prefix-only mode. This is a valid product decision, but should be treated as explicit policy, not accidental drift.
 
-- `PlayerRepository`
-- `SortHistoryRepository`
-- `TeamStateRepository`
-- `VoiceGateway`
-- `GuildDirectory`
-- `Clock`
-- `Logger`
+### 2.6 Global audio broadcast (future feature)
 
-Example:
+Goal:
+- allow a command-triggered sound playback flow across multiple voice channels in the same guild.
 
-```ts
-interface PlayerRepository {
-  getAll(): Promise<Player[]>;
-  createIfMissing(players: ExternalPlayer[]): Promise<void>;
-  updateRank(playerId: string, rank: number): Promise<void>;
-}
-```
+Important Discord platform constraints:
+- bots can join and stream audio to voice channels, but they cannot control arbitrary client-only UI tools from the desktop client.
+- in practice, automation should be designed around Discord bot APIs (voice connections, interactions, commands), not around controlling end-user client features directly.
+- broadcasting to all channels simultaneously can be resource-intensive and may require explicit opt-in policy per guild.
 
-### Step 3: Move Discord objects into adapters only
+Recommended technical approach:
+1. Introduce an audio use-case (`BroadcastAudioUseCase`) that is transport-neutral.
+2. Add a Discord voice adapter that manages one connection per target voice channel.
+3. Use a queue/session model to avoid overlapping broadcasts and to handle retries.
+4. Add guild-level controls (allowed channels, cooldown, max duration, admin-only trigger).
+5. Add observability for connection failures, permission issues, and playback completion.
 
-The Discord layer should:
-- parse messages, slash commands, or modal submissions
-- map Discord entities into DTOs
-- call a use case
-- format the returned result into embeds or UI responses
+Suggested command scope:
+- `!sound <clip>` for single-channel playback.
+- `!soundall <clip>` for multi-channel playback restricted to authorized users.
 
-This isolates Discord-specific code to the outer boundary of the system.
+Risk and policy notes:
+- verify permissions (`Connect`, `Speak`, `ViewChannel`) before attempting playback.
+- include rate limits and anti-spam controls.
+- provide clear opt-out behavior for servers that do not want broadcast audio.
 
-### Step 4: Move formatting out of domain logic
+## 3. Prioritized Roadmap
 
-Team formatting such as:
-- embed titles
-- emoji labels
-- channel messages
-- error response text
+### Phase A: UX and response consistency
 
-should be handled by a **presentation formatter** or Discord adapter layer, not by the sorting logic itself.
+1. Replace remaining plain-text command replies with localized embed responses.
+2. Standardize usage and validation feedback through `ErrorPresenter` + localization keys.
+3. Keep all user-facing text in English and centralized under `src/localization/en/`.
 
-### Step 5: Centralize interaction handling
+### Phase B: Multi-team operations parity
 
-The current `interactionCreate` logic in `src/index.ts` should eventually be decomposed into dedicated handlers such as:
+1. Introduce generic roster-move use-cases for N-team sessions.
+2. Keep `!swap` backward-compatible while adding generalized movement semantics.
 
-- `src/events/interaction/onSetRankSelect.ts`
-- `src/events/interaction/onSetRankModal.ts`
-- `src/events/interaction/onMoveSelection.ts`
+### Phase C: Optional persistence hardening
 
-This preserves the entry point while reducing the size and responsibility of `src/index.ts`.
+1. Persist active match sessions and sort history by guild when durability is required.
+2. Keep in-memory mode as a default/simple profile if desired.
 
-## 3.4 Expected result after decoupling
+### Phase D: Transport policy hardening
 
-After the refactor:
+1. Decide and document whether runtime remains prefix-first long-term.
+2. If slash commands are enabled, route them through the same use-case boundaries.
 
-- the sorting policy becomes testable without Discord mocks
-- rank updates become reusable from both prefix and slash commands
-- the Discord layer becomes a replaceable adapter, not the core of the business model
-- future UI changes do not require rewriting core use cases
+### Phase E: Audio broadcast capability (optional)
 
----
+1. Implement single-channel audio playback as baseline behavior.
+2. Introduce guarded multi-channel broadcast with queueing and permission checks.
+3. Add guild configuration for channel allowlists, cooldown, and clip limits.
+4. Add integration tests for adapter behavior and failure recovery.
 
-## 4. Configuration vs. Hardcoding
+## 4. Near-Term Action List
 
-## 4.1 Hardcoded values currently present in the codebase
+Recommended order:
 
-The following values are currently embedded directly in source files and should be reviewed for extraction into a configuration system.
+1. Normalize `SwapCommand` and `ReplaySortCommand` responses to localized embeds.
+2. Define and implement a generic multi-team roster-adjustment command model.
+3. Document and enforce transport policy (prefix-only vs dual-mode).
+4. Evaluate session/history persistence requirements per deployment profile.
+5. Design and validate an audio broadcast RFC before implementation.
 
-| Category | Hardcoded Value / Rule | File(s) | Risk |
-|---|---|---|---|
-| Team channel mapping | Resolved through configured team IDs and environment variables | `src/config/app-config.ts`, `src/factory/commands/game/GoCommand.ts` | Improved, but still lacks per-guild persistence |
-| Lobby channel rule | `lobby` name match | `src/factory/commands/game/RegroupCommand.ts` | Assumes one naming convention |
-| Rank defaults | `1.5` | `src/config/app-config.ts`, `src/services/players.service.ts`, `seeds/*.json` | Centralized, but still global rather than guild-specific |
-| Rank bounds | `0.1` to `10.0` | `src/config/app-config.ts` | Configured globally rather than per guild |
-| Rank precision | `0.01` step | `src/config/app-config.ts` | Centralized but not yet a domain value object |
-| Sorting randomness | apply chance `0.3` and amplitude `0.2` | `src/config/app-config.ts` | Configurable, but only at app scope |
-| Pagination size | page size `25` | `src/config/app-config.ts` | Centralized but static per deployment |
-| Interaction timeout | `60000` milliseconds | `src/config/app-config.ts`, `src/factory/commands/game/MoveCommand.ts` | Only partially generalized |
-| History size | `35` | `src/config/app-config.ts`, `src/store/sortHistory.ts` | Centralized but in-memory only |
-| DB defaults | host `mysql`, port `3306`, user `botuser`, password `botpass`, DB `game`, table `players` | `src/config.ts` | Suitable for local Docker, but should be clearly modeled as environment configuration |
-| Connection pool size | `connectionLimit: 10` | `src/db.ts` | Operational tuning is not environment-specific |
-| Voice channel type checks | `ChannelType.GuildVoice` | multiple command files | Improved, but still Discord-specific in command implementations |
-| Static seed players | Example JSON files under `seeds/` | `seeds/*.json` | Better than embedding in TypeScript, but still a static seed source rather than an admin flow |
-
-## 4.2 Recommended configuration model
+## 5. Conclusion
 
-A three-tier configuration approach is recommended.
 
-### Tier 1: `.env` for secrets and environment-specific runtime values
-
-Use `.env` strictly for:
-- `TOKEN`
-- database connection values
-- deployment mode (`NODE_ENV`)
-- log level
-- default guild or feature flags when needed
-
-### Tier 2: typed application config for non-secret defaults
-
-Create a typed configuration module, for example:
-
-- `src/config/app-config.ts`
-- `config/default.json`
-- `config/production.json`
-
-This should hold operational defaults such as:
-- rank min/max/precision
-- sort noise policy
-- page size
-- history limit
-- interaction timeout
-- command prefix (during migration)
-- team labels and display names
-
-### Tier 3: persistent guild-level configuration in the database
-
-For multi-server support, introduce database-backed settings tables such as:
-
-- `guild_settings`
-- `team_channel_mapping`
-- `bot_feature_flags`
-
-Example configurable items:
-- lobby channel ID
-- team destination channel IDs
-- preferred team labels (`Radiant/Dire`, `Team A/Team B`, etc.)
-- maximum history size per guild
-- whether ranked sorting noise is enabled
-
-## 4.3 Recommended implementation plan
-
-1. create a single `AppConfig` object validated at startup
-2. define a schema for required and optional settings
-3. replace all repeated magic numbers with named constants sourced from config
-4. move channel discovery from name matching to configured channel IDs
-5. store per-guild overrides in the DB for installations that need flexible layouts
-
-### Strong recommendation
-
-The project should stop relying on **Discord usernames** as the primary player key and prefer the stable Discord user ID instead. Usernames are mutable and therefore fragile for persistence and channel movement logic.
-
----
-
-## 5. Project Structure & Folder Hierarchy
-
-## 5.1 Current structural limitation
-
-The current layout is readable, but it places multiple responsibilities side by side:
-- command classes also handle Discord-specific output
-- `src/index.ts` combines bootstrapping, event wiring, and interaction logic
-- services, state, and store are partially separated, but the domain model is still implicit rather than explicit
-
-## 5.2 Proposed scalable structure
-
-A more scalable folder hierarchy would separate transport, application, domain, and infrastructure concerns.
-
-```text
-src/
-├── app/
-│   ├── commands/               # Slash/prefix command registration and mapping
-│   ├── events/                 # Discord event handlers by event type
-│   ├── interactions/           # Modal/select/button handlers
-│   └── bootstrap/              # App startup and dependency wiring
-├── domain/
-│   ├── models/                 # Player, Team, MatchSession, SortResult
-│   ├── services/               # Pure game logic and ranking policies
-│   ├── value-objects/          # Rank, TeamAssignment, ChannelMapping
-│   └── ports/                  # Repository and gateway interfaces
-├── application/
-│   ├── use-cases/              # SortPlayers, UpdateRank, ReplaySort, DeployTeams
-│   ├── dto/                    # Input/output contracts
-│   └── mappers/                # Mapping from transport objects to DTOs
-├── infrastructure/
-│   ├── discord/                # Discord.js adapters, responders, slash builders
-│   ├── persistence/            # MySQL repository implementations
-│   ├── config/                 # Config loading and validation
-│   └── logging/                # Logging adapter and structured log helpers
-├── shared/
-│   ├── constants/
-│   ├── errors/
-│   ├── utils/
-│   └── types/
-└── index.ts                    # Thin composition root only
-```
-
-## 5.3 Mapping from current structure to target structure
-
-| Current Path | Recommended Destination |
-|---|---|
-| `src/factory/commands/game/**` | `src/application/use-cases/**` plus `src/infrastructure/discord/commands/**` |
-| `src/factory/commands/main/**` | `src/app/commands/**` |
-| `src/components/**` | `src/infrastructure/discord/components/**` |
-| `src/services/players.service.ts` | split into `domain/ports/PlayerRepository.ts` and `infrastructure/persistence/MySqlPlayerRepository.ts` |
-| `src/state/teams.ts` | `application` or `infrastructure/state` depending on persistence strategy |
-| `src/store/sortHistory.ts` | `application/state` initially, then persistent repository if durability is required |
-| `src/config.ts` and `src/db.ts` | `infrastructure/config/**` and `infrastructure/persistence/**` |
-
-This proposed layout preserves the current mental model while providing a path to scale responsibly.
-
----
-
-## 6. Code Maintenance and Command Modernization
-
-## 6.1 Legacy or outdated command patterns currently present
-
-The current command flow is based on:
-- prefix commands such as `!sort`, `!go`, and `!lobby`
-- message-content parsing in `messageCreate`
-- command selection through a manual switch statement in `CommandFactory`
-
-This is functional but represents an older Discord bot interaction style.
-
-### Specific maintenance observations
-
-| Observation | Evidence | Recommended Action |
-|---|---|---|
-| Prefix-first command UX | `src/index.ts` and `src/app/events/interactionCreate.ts` | Decide whether prefix mode remains permanent or whether slash commands should be enabled |
-| Command registry already improved | `src/factory/commands/main/CommandFactory.ts` | Keep the registry pattern and continue extracting behavior from command classes |
-| Prefix-only command UX | `src/index.ts` `messageCreate` flow | Introduce slash commands as the primary interface |
-| Monolithic interaction handler | `src/index.ts` handles select menus, buttons, and modal submit logic | Split by interaction type or feature area |
-| Widespread `any` usage | `Command`, multiple command files, collector handlers | Replace with explicit types and DTOs |
-| Interaction routing can split further | `src/app/events/interactionCreate.ts` routes multiple feature areas | Continue decomposing interactions by feature while keeping the shared error boundary |
-
-## 6.2 Slash command migration path
-
-A practical migration plan should avoid a single disruptive rewrite.
-
-### Phase A: Dual-support mode
-
-- keep existing prefix commands operational
-- add slash command equivalents using Discord application commands
-- map both transport styles to the same use cases
-
-Examples:
-- `/sort`
-- `/swap team_one_position:1 team_two_position:2`
-- `/go`
-- `/lobby`
-- `/setrank player:<user> rank:<number>`
-- `/players list`
-
-### Phase B: Shared command execution layer
-
-Instead of each Discord command directly owning the business logic, define:
-
-- command handlers for Discord transport
-- use cases for the underlying behavior
-
-This means both prefix and slash handlers call the same application service.
-
-### Phase C: Deprecation and removal
-
-After slash commands are stable:
-- deprecate the legacy prefix parser if no longer needed
-- reduce `messageCreate` command handling to compatibility mode or remove it entirely
-
-## 6.3 Updated handler pattern recommendation
-
-Recommended pattern:
-
-1. **Event Handler** receives raw Discord event
-2. **Command Resolver** maps it to a transport command object
-3. **Use Case** executes business logic against interfaces
-4. **Presenter / Responder** converts output to Discord embeds, ephemeral messages, or modals
-
-This pattern improves:
-- maintainability
-- testability
-- observability
-- onboarding for open-source contributors
-
----
-
-## 7. Additional Code Quality Improvements
-
-Although not explicitly requested, the following areas materially affect the refactoring outcome.
-
-## 7.1 Type safety
-
-The codebase should remove broad `any` usage in favor of:
-- `Message`
-- `ChatInputCommandInteraction`
-- `ButtonInteraction`
-- `StringSelectMenuInteraction`
-- repository and use-case interfaces
-- typed DTOs for application inputs and outputs
-
-## 7.2 Error handling
-
-Current error handling is mostly message-based and ad hoc. A more robust approach should include:
-- typed domain errors (`InvalidRankError`, `MissingTeamStateError`, `ChannelConfigurationError`)
-- structured logging
-- user-safe error messages separated from developer diagnostics
-
-## 7.3 Testing strategy
-
-A reliable test suite should include:
-
-- **unit tests** for sort balancing policy and swap rules
-- **service tests** for player synchronization behavior
-- **integration tests** for MySQL-backed repositories
-- **adapter tests** for slash command and interaction mapping
-
-The highest-value first target is the **ranked sorting algorithm**, because it is central to the bot's business purpose and is currently embedded in Discord-aware command code.
-
-## 7.4 Logging and observability
-
-Introduce:
-- a logging abstraction
-- correlation-friendly log messages around sort creation and player movement
-- startup configuration summaries excluding secrets
-- warning logs for mismatched guild/channel configuration
-
-## 7.5 Internationalization and text consistency
-
-The repository already contains `textSource.json`, but many messages remain inline in command files. A more consistent approach would centralize user-facing text to support:
-- message consistency
-- easier maintenance
-- future localization
-- moderation of tone for open-source/public usage
-
----
-
-## 8. Recommended Delivery Roadmap
-
-## Phase 1 — Stabilization and Safety
-
-Scope:
-- remove inline magic numbers into named config constants
-- replace raw `any` with concrete Discord types where possible
-- centralize repeated response text
-
-Expected outcome:
-- lower regression risk during later refactors
-- improved readability and basic cohesion
-
-## Phase 2 — Core Decoupling
-
-Scope:
-- create transport-neutral use cases
-- extract repository interfaces and MySQL implementations
-- move the sorting logic into a pure domain service
-- isolate Discord presenters and responders
-
-Expected outcome:
-- domain logic becomes independently testable
-- Discord becomes an adapter rather than the execution center
-
-## Phase 3 — Configuration Modernization
-
-Scope:
-- introduce typed app configuration
-- replace name-based channel discovery with configured IDs
-- support per-guild configuration storage
-- make history limits, rank policy, and timeouts configurable
-
-Expected outcome:
-- broader deployment flexibility and lower operational friction
-
-## Phase 4 — Command and Interaction Modernization
-
-Scope:
-- add slash command support
-- split event handlers by feature
-- optionally retire prefix commands after compatibility period
-
-Expected outcome:
-- improved user experience and modern Discord alignment
-
-## Phase 5 — Durability and Open-Source Readiness
-
-Scope:
-- persist match/session state if required
-- add test coverage and CI quality gates
-- standardize contribution workflows and architectural decision records
-
-Expected outcome:
-- stronger foundation for community contributions under the MIT license
-
----
-
-## 9. Recommended Near-Term Priorities
-
-If the project can only address a limited number of items first, the recommended order is:
-
-1. **Extract the sorting and rank-update logic into transport-neutral use cases**
-2. **Replace name-based channel assumptions with configurable IDs**
-3. **Introduce slash commands while preserving compatibility**
-4. **Reduce `any` usage and improve type definitions**
-5. **Centralize persistent access behind repository interfaces**
-
-This order provides the best balance between immediate maintainability gains and future architectural flexibility.
-
----
-
-## 10. Conclusion
-
-The current codebase is a valid starting point for a Discord game bot, but its next stage of maturity requires clear separation between **Discord transport concerns** and **core game behavior**. With moderate structural refactoring, typed configuration, and incremental command modernization, the project can evolve into a more robust and contributor-friendly foundation for an MIT-licensed open-source community.
-
-The strongest long-term direction is not a full rewrite, but a **phased extraction of domain logic, configuration, and infrastructure boundaries** while preserving the existing operational behavior during migration.

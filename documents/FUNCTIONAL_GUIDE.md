@@ -1,6 +1,25 @@
 # FUNCTIONAL_GUIDE
 
+_Last verified: 2026-04-27_
+
+_Technology context: Built with Node.js runtime and TypeScript._
+
 _Technical guide to the runtime behavior, data movement, and internal module interactions of the application._
+
+## 0. Documentation Maintenance
+
+This guide follows the same documentation policy defined in `README.md`.
+
+For each pull request:
+
+1. Update this file when command flow, interaction behavior, startup sequencing, or state transitions change.
+2. If this guide is reviewed and still accurate, keep content unchanged and update only `Last verified`.
+3. If there is no functional impact, record `No documentation impact` in the PR description.
+
+Review responsibility:
+
+- Author: updates functional documentation for touched behavior.
+- Reviewer: confirms scope coverage and verifies date updates.
 
 ## 1. Execution Model
 

@@ -12,10 +12,16 @@ export default class SwapCommand extends Command {
     super(command, chatChannel);
   }
 
+  private sendSwapWarning(message: string): void {
+    this.chatChannel.channel.send({
+      embeds: [EmbedFactory.warning(t('commands.swap.title'), message)],
+    });
+  }
+
   async execute(): Promise<void> {
     const parts = this.command.trim().split(/\s+/);
     if (parts.length < 3) {
-      this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
+      this.sendSwapWarning(t('errors.swapFormat'));
       return;
     }
 
@@ -26,7 +32,7 @@ export default class SwapCommand extends Command {
     const isDash2 = arg2 === '-';
 
     if (isDash1 && isDash2) {
-      this.chatChannel.channel.send('At least one position must be a number. Example: `!swap 1 -` or `!swap - 3`.');
+      this.sendSwapWarning(t('errors.swapAtLeastOnePosition'));
       return;
     }
 
@@ -36,7 +42,7 @@ export default class SwapCommand extends Command {
     if (!isDash1) {
       pos1 = parseInt(arg1, 10);
       if (isNaN(pos1) || pos1 <= 0) {
-        this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
+        this.sendSwapWarning(t('errors.swapFormat'));
         return;
       }
     }
@@ -44,14 +50,14 @@ export default class SwapCommand extends Command {
     if (!isDash2) {
       pos2 = parseInt(arg2, 10);
       if (isNaN(pos2) || pos2 <= 0) {
-        this.chatChannel.channel.send('Swap format: `!swap <team 1 position> <team 2 position>`');
+        this.sendSwapWarning(t('errors.swapFormat'));
         return;
       }
     }
 
     const sorts = getAllSorts();
     if (!sorts || sorts.length === 0) {
-      this.chatChannel.channel.send('It\'s necessary to have at least one sort in history to perform a swap.');
+      this.sendSwapWarning(t('errors.swapHistoryRequired'));
       return;
     }
 
@@ -59,7 +65,7 @@ export default class SwapCommand extends Command {
     const lastSort = getSort(lastIndex);
 
     if (!lastSort) {
-      this.chatChannel.channel.send('Error retrieving the last sort from history.');
+      this.sendSwapWarning(t('errors.swapHistoryReadFailed'));
       return;
     }
 
@@ -77,16 +83,21 @@ export default class SwapCommand extends Command {
 
     const firstTeamLabel = lastSort.teams[0]?.teamName ?? 'Team 1';
     const secondTeamLabel = lastSort.teams[1]?.teamName ?? 'Team 2';
-  const team1 = [...(lastSort.teams[0]?.players ?? [])];
-  const team2 = [...(lastSort.teams[1]?.players ?? [])];
+    const team1 = [...(lastSort.teams[0]?.players ?? [])];
+    const team2 = [...(lastSort.teams[1]?.players ?? [])];
 
     if (!isDash1 && !isDash2) {
       const index1 = (pos1 as number) - 1;
       const index2 = (pos2 as number) - 1;
 
       if (index1 >= team1.length || index2 >= team2.length) {
-        this.chatChannel.channel.send(
-          `Invalid position. ${firstTeamLabel} contains ${team1.length} players and ${secondTeamLabel} has ${team2.length}.`
+        this.sendSwapWarning(
+          t('errors.swapInvalidPositionBoth', {
+            firstTeamLabel,
+            firstTeamCount: team1.length,
+            secondTeamLabel,
+            secondTeamCount: team2.length,
+          })
         );
         return;
       }
@@ -95,7 +106,7 @@ export default class SwapCommand extends Command {
       const player2 = team2[index2];
 
       if (!player1 || !player2) {
-        this.chatChannel.channel.send('No players on that positions.');
+        this.sendSwapWarning(t('errors.swapNoPlayersAtPositions'));
         return;
       }
 
@@ -105,15 +116,20 @@ export default class SwapCommand extends Command {
       const index1 = (pos1 as number) - 1;
 
       if (index1 >= team1.length) {
-        this.chatChannel.channel.send(
-          `Invalid position. ${firstTeamLabel} contains ${team1.length} players.`
+        this.sendSwapWarning(
+          t('errors.swapInvalidPositionSingle', {
+            teamLabel: firstTeamLabel,
+            teamCount: team1.length,
+          })
         );
         return;
       }
 
       const moved = team1.splice(index1, 1)[0];
       if (!moved) {
-        this.chatChannel.channel.send(`No player was found in that ${firstTeamLabel} position.`);
+        this.sendSwapWarning(
+          t('errors.swapNoPlayerAtPosition', { teamLabel: firstTeamLabel })
+        );
         return;
       }
 
@@ -122,15 +138,20 @@ export default class SwapCommand extends Command {
       const index2 = (pos2 as number) - 1;
 
       if (index2 >= team2.length) {
-        this.chatChannel.channel.send(
-          `Invalid position. ${secondTeamLabel} contains ${team2.length} players.`
+        this.sendSwapWarning(
+          t('errors.swapInvalidPositionSingle', {
+            teamLabel: secondTeamLabel,
+            teamCount: team2.length,
+          })
         );
         return;
       }
 
       const moved = team2.splice(index2, 1)[0];
       if (!moved) {
-        this.chatChannel.channel.send(`No player was found in that ${secondTeamLabel} position.`);
+        this.sendSwapWarning(
+          t('errors.swapNoPlayerAtPosition', { teamLabel: secondTeamLabel })
+        );
         return;
       }
 
@@ -155,7 +176,7 @@ export default class SwapCommand extends Command {
     });
 
     if (sortId === null) {
-      this.chatChannel.channel.send('No more sorts allowed.');
+      this.sendSwapWarning(t('errors.sortHistoryLimitReached'));
       return;
     }
 
@@ -215,5 +236,4 @@ export default class SwapCommand extends Command {
 
     return total;
   }
-
 }

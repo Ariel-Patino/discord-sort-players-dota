@@ -1,39 +1,160 @@
 # Discord Sort Players Dota
 
+_Last verified: 2026-04-27_
+
+_Technology context: Built with Node.js runtime and TypeScript._
+
 ## Overview
 
-This repository contains a TypeScript-based Discord bot for organizing Dota player groups, balancing teams, managing player rank data, and moving participants across voice channels.
+This repository contains a TypeScript Discord bot for organizing Dota player groups, balancing teams, managing player metadata, and moving participants across voice channels.
 
-The codebase is structured as a **command-oriented, event-driven application** backed by **MySQL** and typically executed through **Docker Compose**. The current implementation is small enough to be maintained as a modular monolith while still exposing clear boundaries for future refactoring.
+The implementation is a command-oriented, event-driven modular monolith backed by MySQL and designed for Docker-first execution.
+
+Current runtime status:
+
+- Prefix commands are the active command transport (`!sort`, `!go`, etc.).
+- Slash chat-input handlers exist in the codebase but are intentionally rejected at runtime in prefix-only mode.
+- Team assignment state and sort history are in-memory (process-local) and are not persisted across bot restarts.
+
+## Portfolio Snapshot
+
+This repository can be presented as a production-style Node.js + TypeScript backend bot project.
+
+Highlights:
+
+- Designed as an event-driven modular monolith with clear layer boundaries.
+- Uses domain services and use-case classes to separate business logic from transport concerns.
+- Includes repository interfaces and MySQL persistence adapters.
+- Provides structured logging and centralized error presentation.
+- Supports interactive Discord workflows (buttons, select menus, modals).
+- Runs in a Docker-first environment with automated DB bootstrap and seed flow.
+- Includes unit tests for core balancing and configuration logic.
+
+Technology profile:
+
+- Runtime: Node.js
+- Language: TypeScript (strict)
+- Framework: discord.js
+- Database: MySQL 8 (`mysql2`)
+- DevOps: Docker / Docker Compose
+- Quality: ESLint, Prettier, Jest
 
 ---
 
 ## Documentation Index
 
-The following documents provide the detailed technical reference for the repository:
+This README is the high-level single entry point. Detailed references live in `documents/`:
 
-- [`documents/PROJECT_MAP.md`](documents/PROJECT_MAP.md) — repository structure, module inventory, and dependency map
-- [`documents/FUNCTIONAL_GUIDE.md`](documents/FUNCTIONAL_GUIDE.md) — request/action lifecycle, data movement, and business logic flows
-- [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) — architectural classification, component relationships, and Mermaid diagrams
-- [`documents/DB-README.md`](documents/DB-README.md) — database reset, inspection, and manual maintenance instructions
-- [`documents/Commands_sort_go_swap_replay.md`](documents/Commands_sort_go_swap_replay.md) — current prefix-command flow for `!sort`, `!go`, `!swap`, and `!replay`
-- [`documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md`](documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md) — how to register, configure, and implement custom matchmaking strategies
+- [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) - architecture style, component mapping, runtime diagrams, and critical sequences
+- [`documents/FUNCTIONAL_GUIDE.md`](documents/FUNCTIONAL_GUIDE.md) - startup flow, event lifecycle, command/interactions behavior, and data movement
+- [`documents/PROJECT_MAP.md`](documents/PROJECT_MAP.md) - repository map, module inventory, dependencies, and scripts
+- [`documents/DB-README.md`](documents/DB-README.md) - MySQL reset, inspection, and maintenance operations
+- [`documents/Commands_sort_go_swap_replay.md`](documents/Commands_sort_go_swap_replay.md) - deep analysis for `!sort`, `!go`, `!swap`, and `!replay`
+- [`documents/SORT_ALGORITHM_ANALYSIS.md`](documents/SORT_ALGORITHM_ANALYSIS.md) - balancing strategy internals, strengths, and known heuristic limits
+- [`documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md`](documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md) - strategy plugin contract, registration, and extension model
+- [`documents/UX_AND_POLISH_GUIDE.md`](documents/UX_AND_POLISH_GUIDE.md) - UX consistency audit and interaction design recommendations
+- [`documents/IMPROVEMENTS.md`](documents/IMPROVEMENTS.md) - architecture and maintainability roadmap
 
-This `README.md` is intended to function as the primary entry point and summary guide.
+All project documentation is maintained in English.
+
+### Complete Markdown File Index
+
+The table below links to every `.md` file currently present in the repository.
+
+| File | Area | Description |
+|---|---|---|
+| [`README.md`](README.md) | Root | Main project overview, setup, architecture summary, and contribution guidance |
+| [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) | Documents | Runtime architecture, layer boundaries, and sequence diagrams |
+| [`documents/FUNCTIONAL_GUIDE.md`](documents/FUNCTIONAL_GUIDE.md) | Documents | Execution lifecycle and behavior by command/interaction flow |
+| [`documents/PROJECT_MAP.md`](documents/PROJECT_MAP.md) | Documents | Repository map, dependency inventory, and script overview |
+| [`documents/DB-README.md`](documents/DB-README.md) | Documents | Database reset, inspection, and operational maintenance guide |
+| [`documents/Commands_sort_go_swap_replay.md`](documents/Commands_sort_go_swap_replay.md) | Documents | Deep functional analysis of `!sort`, `!go`, `!swap`, and `!replay` |
+| [`documents/SORT_ALGORITHM_ANALYSIS.md`](documents/SORT_ALGORITHM_ANALYSIS.md) | Documents | Team balancing strategy behavior and known heuristic limits |
+| [`documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md`](documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md) | Documents | Matchmaking strategy extension contract and registration flow |
+| [`documents/UX_AND_POLISH_GUIDE.md`](documents/UX_AND_POLISH_GUIDE.md) | Documents | UX audit findings and polish recommendations |
+| [`documents/IMPROVEMENTS.md`](documents/IMPROVEMENTS.md) | Documents | Forward-looking improvement roadmap |
+| [`seeds/README.md`](seeds/README.md) | Seeds | Seed file format and usage guidance |
+
+### Documentation Traceability Matrix
+
+Use this matrix to quickly map each document to the source-of-truth code area and expected maintenance mode.
+
+| Document | Primary code anchors | Maintenance mode |
+|---|---|---|
+| `documents/ARCHITECTURE.md` | `src/index.ts`, `src/factory/commands/**`, `src/services/players.service.ts`, `src/state/teams.ts`, `src/store/sortHistory.ts` | Snapshot (update on architecture/runtime flow changes) |
+| `documents/FUNCTIONAL_GUIDE.md` | `src/index.ts`, `src/app/events/interactionCreate.ts`, `src/factory/commands/**`, `src/application/use-cases/**` | Snapshot (update on command or interaction behavior changes) |
+| `documents/PROJECT_MAP.md` | repository tree, `package.json`, `tsconfig.json`, `docker-compose.yml` | Snapshot (update on structure/dependencies/scripts changes) |
+| `documents/DB-README.md` | `src/init-db.ts`, `src/db.ts`, `src/infrastructure/persistence/**`, `docker-compose.yml` | Snapshot (update on schema/bootstrap/ops changes) |
+| `documents/Commands_sort_go_swap_replay.md` | `src/factory/commands/game/SortRankedCommand.ts`, `src/factory/commands/game/GoCommand.ts`, `src/factory/commands/game/SwapCommand.ts`, `src/factory/commands/game/ReplaySortCommand.ts` | Snapshot (update on these command semantics) |
+| `documents/SORT_ALGORITHM_ANALYSIS.md` | `src/domain/services/BalanceTeamsService.ts`, `src/application/use-cases/SortPlayersUseCase.ts`, `src/factory/commands/game/SortRankedCommand.ts` | Snapshot + analysis (update when balancing logic changes) |
+| `documents/MATCHMAKING_STRATEGY_PLUGIN_GUIDE.md` | `src/domain/services/IMatchmakingStrategy.ts`, `src/config/matchmaking-strategy.ts`, `src/domain/services/Dota1MatchmakingStrategy.ts` | Snapshot (update on strategy contract/registry changes) |
+| `documents/UX_AND_POLISH_GUIDE.md` | `src/presentation/discord/**`, `src/localization/**`, interaction and command handlers | Historical audit + recommendations |
+| `documents/IMPROVEMENTS.md` | cross-cutting architecture across `src/**` | Roadmap (intentionally forward-looking) |
 
 ---
 
-## Technology Summary
+## Architecture and Design Snapshot
 
-| Category | Stack |
+Primary style: layered modular monolith with event-driven ingress.
+
+High-level runtime flow:
+
+```text
+Discord event
+  -> src/index.ts
+  -> prefix command validation or interaction routing
+  -> CommandFactory / interaction handlers
+  -> command or use-case execution
+  -> DB and runtime-state operations
+  -> Discord response or voice move
+```
+
+Main layers and responsibilities:
+
+- Ingress: `src/index.ts`, `src/app/events/interactionCreate.ts`
+- Routing: `src/factory/commands/main/CommandFactory.ts`
+- Application/use cases: `src/factory/commands/**`, `src/application/use-cases/**`
+- Domain balancing and rules: `src/domain/services/**`, `src/config/gameRules.ts`, `src/config/matchmaking-strategy.ts`
+- Persistence and infrastructure: `src/db.ts`, `src/init-db.ts`, `src/infrastructure/persistence/**`, `docker/start.sh`
+- Runtime state: `src/state/teams.ts`, `src/store/sortHistory.ts`
+
+Design characteristics:
+
+- Factory-based command dispatch.
+- Configurable team balancing with pluggable matchmaking strategy (`MATCHMAKING_STRATEGY`, default `dota1`).
+- Constraint-aware balancing with optional rank noise.
+- Interactive Discord UI flows for move/rank/attribute operations via select menus, buttons, and modals.
+
+---
+
+## Language and Technical Stack
+
+| Category | Current stack |
 |---|---|
-| Language | `TypeScript` |
-| Runtime | `Node.js` |
-| Bot framework | `discord.js` |
-| Database | `MySQL 8` via `mysql2` |
-| Configuration | `dotenv` |
-| Container runtime | `Docker` / `Docker Compose` |
-| Tooling | `ESLint`, `Prettier`, `Husky`, `ts-node`, `ts-node-dev` |
+| Primary language | TypeScript (`strict` mode) |
+| Runtime | Node.js |
+| Module target | CommonJS |
+| Bot framework | discord.js |
+| Database | MySQL 8.4 via mysql2 |
+| Configuration | dotenv + typed runtime config |
+| Container workflow | Docker + Docker Compose |
+| Testing | Jest + ts-jest |
+| Quality tooling | ESLint, Prettier, Husky |
+
+---
+
+## External Libraries in Use
+
+| Library | Role in this project |
+|---|---|
+| `discord.js` | Discord gateway events, messages, interactions, and voice actions |
+| `@discordjs/rest` + `discord-api-types` | Discord API typing and REST support |
+| `mysql2` | Promise-based MySQL connectivity |
+| `dotenv` | Environment variable loading |
+| `module-alias` | Import aliases (`@root/*`, `@src/*`) |
+| `chalk` | Colored console output |
+| `jest`, `ts-jest`, `@types/jest` | Test runner and TS testing support |
+| `ts-node`, `ts-node-dev` | TypeScript execution for setup/dev workflows |
 
 ---
 
@@ -41,156 +162,167 @@ This `README.md` is intended to function as the primary entry point and summary 
 
 ### 1. Prerequisites
 
-Recommended environment:
+Recommended workflow:
 
-- `Docker` and `Docker Compose`
-- a valid Discord bot token
+- Docker
+- Docker Compose
+- valid Discord bot token
 
-Optional local development environment:
+Optional local workflow:
 
-- `Node.js`
-- access to a MySQL instance
+- Node.js
+- reachable MySQL instance
 
 ### 2. Configure environment variables
 
-Create a `.env` file from the project template or manually define the required values.
+Create `.env` and define the variables you need.
 
-Example:
+Minimal example:
 
 ```env
 TOKEN=your-discord-bot-token
 DISCORD_APPLICATION_ID=your-application-id
 DISCORD_GUILD_ID=your-guild-id
 PLAYER_SEED_FILE=seeds/example.players.json
+
 TEAM_1_CHANNEL_ID=your-team-1-voice-channel-id
 TEAM_2_CHANNEL_ID=your-team-2-voice-channel-id
 TEAM_3_CHANNEL_ID=your-team-3-voice-channel-id
 TEAM_4_CHANNEL_ID=your-team-4-voice-channel-id
+
+MATCHMAKING_STRATEGY=dota1
 ```
 
-For the default Docker workflow, database values are already supplied by `docker-compose.yml`.
+Notes:
 
-> For multi-team matches, add as many `TEAM_<n>_CHANNEL_ID` variables as needed (for example `TEAM_3_CHANNEL_ID`, `TEAM_4_CHANNEL_ID`, and so on).
-> You can also provide a JSON map through `TEAM_CHANNEL_IDS_JSON`, for example `{"team-1":"123","team-2":"456","team-3":"789"}`.
-> Player seeds now live under `seeds/`. The repository includes `seeds/example.players.json` as a publishable example, and you can point `PLAYER_SEED_FILE` to your own file with the same format.
+- Docker defaults already provide `DB_*` values through `docker-compose.yml`.
+- You can map arbitrary team channels either with repeated `TEAM_<n>_CHANNEL_ID` variables or `TEAM_CHANNEL_IDS_JSON`.
+- If `MATCHMAKING_STRATEGY` is omitted, `dota1` is selected.
 
 ### 3. Start the full stack
 
-Preferred startup path:
+Preferred:
 
 ```bash
 docker compose up --build
 ```
 
-Equivalent npm command:
+NPM wrapper:
 
 ```bash
 npm start
 ```
 
-This sequence will:
-1. start MySQL
-2. wait until the database is reachable
-3. initialize the `players` table if needed
-4. seed initial player data when the table is empty
-5. start the Discord bot process
+Startup sequence:
 
-To create more than two teams during a match, use the prefix command with the desired team count:
+1. MySQL container starts and passes health checks.
+2. Bot container waits for DB readiness.
+3. `npm run setup-db` creates schema if missing.
+4. Seed data is inserted only when the table is empty.
+5. Bot process starts and logs into Discord.
 
-```bash
-!sort 3
-```
-
-### 4. Useful operational commands
+### 4. Useful commands
 
 ```bash
 docker compose down
 docker compose logs -f bot
+
 npm run docker:down
 npm run docker:logs
-```
-
-### 5. Optional local development without Docker
-
-If MySQL is available outside Docker and the `DB_*` environment variables are configured:
-
-```bash
-npm install
 npm run setup-db
 npm run dev
+npm run test
+npm run lint
+npm run format
 ```
 
 ---
 
-## High-Level Architecture Summary
+## Command Surface (Prefix Mode)
 
-The repository follows a **layered modular monolith** design with **event-driven command processing**.
+The active command transport is prefix mode. Registered commands:
 
-### Main runtime flow
+- `!sort [teamCount]`
+- `!go`
+- `!swap`
+- `!replay`
+- `!lobby`
+- `!move`
+- `!setrank`
+- `!setattribute`
+- `!list`
+- `!listall`
+- `!help`
 
-```text
-Discord event
-  -> src/index.ts
-  -> prefix command validation or interaction routing
-  -> CommandFactory dispatch or dedicated interaction handler
-  -> command/use-case execution
-  -> DB and runtime-state interaction
-  -> Discord response or voice action
-```
+Important behavior notes:
 
-Slash command handlers exist in the codebase, but the runtime currently operates in prefix-only mode. Chat-input interactions are acknowledged with a "use the `!` prefix commands instead" response.
+- `!sort` computes and stores team assignments.
+- `!go` deploys the active assignment to configured team voice channels.
+- `!swap` currently supports only two-team swap semantics even though sorting supports dynamic team counts.
 
-### Primary architectural layers
+---
 
-- **Ingress layer**: `src/index.ts` receives Discord messages and interactions
-- **Routing layer**: `src/factory/commands/main/CommandFactory.ts` resolves command handlers
-- **Use-case layer**: command classes under `src/factory/commands/**` implement application behavior
-- **Service layer**: `src/services/players.service.ts` provides DB-backed player access and synchronization
-- **State layer**: `src/state/teams.ts` and `src/store/sortHistory.ts` hold process-local runtime state
-- **Infrastructure layer**: `src/config.ts`, `src/db.ts`, `src/init-db.ts`, Docker files, and Compose configuration
+## Why MIT Is a Good Fit Here
 
-### Refactoring potential
+This repository uses the MIT License, which is usually a strong fit for utility bots and community tooling.
 
-The current codebase presents several clear refactoring seams:
+Key advantages:
 
-- command implementations are already isolated by use case
-- DB access is partially centralized in `players.service.ts`
-- UI component generation is separated into `src/components/**`
-- runtime state is explicitly isolated, making future persistence changes easier to scope
+- Very permissive reuse: developers can use, modify, and redistribute the code with minimal friction.
+- Commercial compatibility: companies can integrate or build on top of the project.
+- Low adoption overhead: simple terms make contribution and downstream usage easier.
+- Strong open-source reach: permissive terms usually increase experimentation, forks, and ecosystem reuse.
 
-For a more detailed breakdown, refer to [`documents/ARCHITECTURE.md`](documents/ARCHITECTURE.md) and [`documents/FUNCTIONAL_GUIDE.md`](documents/FUNCTIONAL_GUIDE.md).
+MIT still requires preserving copyright and license notice in distributed copies.
 
 ---
 
 ## Contribution Notes
 
-Contributions should remain consistent with the current repository structure and tooling.
+Recommended contribution practice:
 
-Recommended practice:
-
-1. keep changes scoped to a single concern when possible
-2. preserve the separation between command logic, UI components, services, and infrastructure
-3. run the available quality checks before submitting changes:
+1. Keep each change focused on one concern.
+2. Preserve layer boundaries (commands, use cases, services, infrastructure, presentation).
+3. Run project checks before opening a PR:
 
 ```bash
+npm run test
 npm run lint
 npm run format
 ```
 
-4. update the relevant documentation in `documents/` when modifying architecture, flows, or setup procedures
+4. Update the relevant file(s) in `documents/` whenever architecture, flow, setup, or command behavior changes.
 
-The presence of `commitlint` and `husky` indicates an expectation of basic repository hygiene during contribution and review.
+### Documentation Update Policy
+
+For every pull request, apply the following policy:
+
+1. If code behavior changes, update the affected document(s) in `documents/` in the same PR.
+2. If a document was reviewed and remains accurate, keep its content and update only its `Last verified` date.
+3. If a document is intentionally forward-looking (for example `IMPROVEMENTS.md`), keep roadmap items but refresh status notes when completed work is merged.
+4. If no documentation update is required, explicitly state `No documentation impact` in the PR description.
+
+Ownership:
+
+- PR author: updates docs and `Last verified` markers for touched areas.
+- PR reviewer: confirms documentation scope and date updates before approval.
 
 ---
 
 ## License
 
-This repository is distributed under the **MIT License**.
+Distributed under the MIT License.
 
-See [`LICENSE`](LICENSE) for the full license text.
+See [`LICENSE`](LICENSE).
+
+## Author
+
+- Ariel Patino Flores
+- Email: ariel.patino.f@gmail.com
+- LinkedIn: https://www.linkedin.com/in/Ariel-Patino
 
 ---
 
 ## Summary
 
-This repository provides a compact, command-driven Discord bot with a MySQL-backed player model and a Docker-first runtime. The documentation set in `documents/` is intended to support maintenance, analysis, and future refactoring without requiring direct code inspection as a first step.
+This project is a TypeScript Discord bot with MySQL persistence, Docker-first operations, pluggable matchmaking strategy support, and a documented modular architecture designed for maintainable growth.

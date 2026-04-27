@@ -6,8 +6,12 @@
     "footer": "Match ID: #{{sortId}} — Go?"
   },
   "replay": {
+    "commandTitle": "Replay Match",
     "title": "Replay Match #{{index}}",
     "footer": "Use `!go` to deploy the teams."
+  },
+  "swap": {
+    "title": "Swap Players"
   },
   "go": {
     "title": "Match Deployment",

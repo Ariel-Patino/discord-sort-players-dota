@@ -1,5 +1,9 @@
 # Docker Reset and Database Guide
 
+_Last verified: 2026-04-27_
+
+_Technology context: Built with Node.js runtime and TypeScript._
+
 This document explains how to safely restart the Docker stack for this project and how to work with the MySQL database when seed data changes.
 
 It is written for beginners and uses the current project defaults from `docker-compose.yml`.

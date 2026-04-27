@@ -1,5 +1,7 @@
 # Player Seeds
 
+_Technology context: Seed files are consumed by the Node.js + TypeScript application runtime._
+
 This folder contains player seed files for first-time database initialization.
 
 ## Default example

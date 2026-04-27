@@ -1,5 +1,9 @@
 # SORT ALGORITHM ANALYSIS
 
+_Last verified: 2026-04-27_
+
+_Technology context: Built with Node.js runtime and TypeScript._
+
 **Audit date:** 2026-04-10  
 **Scope:** Prefix `!sort` execution flow, its shared balancing core, and the resulting team assignment lifecycle.
 
