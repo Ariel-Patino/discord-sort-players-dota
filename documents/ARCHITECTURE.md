@@ -86,23 +86,23 @@ This section describes the deployment and communication topology.
 
 ```mermaid
 flowchart TB
-    Discord["Discord Platform<br/>Gateway events + interactions + voice state"] --> Entry["`src/index.ts`<br/>Discord client and event entry points"]
+    Discord["Discord Platform<br/>Gateway events + interactions + voice state"] --> Entry["src/index.ts<br/>Discord client and event entry points"]
 
     subgraph BotService["Bot Service (Node.js / TypeScript)"]
-        Entry --> Validate["`src/utils/commands.ts`<br/>Command validation"]
-        Validate --> Factory["`CommandFactory`<br/>Command dispatch"]
+        Entry --> Validate["src/utils/commands.ts<br/>Command validation"]
+        Validate --> Factory["CommandFactory<br/>Command dispatch"]
         Factory --> Commands["Command handlers<br/>sort, replay, swap, go, move, setrank, list, help"]
-        Commands <--> UI["UI components<br/>`setrank-ui.ts`, `move-ui.ts`"]
-        Commands --> Services["Service layer<br/>`players.service.ts`"]
-        Commands <--> RuntimeState["Runtime state<br/>`teams.ts`, `sortHistory.ts`"]
-        Services --> DBPool["Infrastructure<br/>`config.ts` + `db.ts`"]
+        Commands <--> UI["UI components<br/>setrank-ui.ts, move-ui.ts"]
+        Commands --> Services["Service layer<br/>players.service.ts"]
+        Commands <--> RuntimeState["Runtime state<br/>teams.ts, sortHistory.ts"]
+        Services --> DBPool["Infrastructure<br/>config.ts + db.ts"]
         Entry --> DBPool
     end
 
-    StartScript["`docker/start.sh`"] --> InitDB["`src/init-db.ts`<br/>schema bootstrap + seed"]
-    InitDB --> MySQL[("MySQL 8.4<br/>`players` table")]
+    StartScript["docker/start.sh"] --> InitDB["src/init-db.ts<br/>schema bootstrap + seed"]
+    InitDB --> MySQL[("MySQL 8.4<br/>players table")]
     DBPool --> MySQL
-    MySQL --- Volume[("Docker volume<br/>`db_data`")]
+    MySQL --- Volume[("Docker volume<br/>db_data")]
 ```
 
 ### Interpretation
@@ -123,15 +123,15 @@ The following diagram focuses on code-level module relationships inside the bot 
 ```mermaid
 flowchart LR
     subgraph Ingress["Ingress / Event Layer"]
-        M["`messageCreate`"]
-        I["`interactionCreate`<br/>prefix-only interaction router"]
+        M["messageCreate"]
+        I["interactionCreate<br/>prefix-only interaction router"]
     end
 
     subgraph Orchestration["Orchestration Layer"]
-        IDX["`src/index.ts`"]
-        VAL["`utils/commands.ts`"]
-        F["`CommandFactory`"]
-        BASE["`Command` base class"]
+        IDX["src/index.ts"]
+        VAL["utils/commands.ts"]
+        F["CommandFactory"]
+        BASE["Command base class"]
     end
 
     subgraph UseCases["Application Use Cases"]
@@ -141,19 +141,19 @@ flowchart LR
     end
 
     subgraph Support["Support Modules"]
-        UI["UI builders<br/>`setrank-ui.ts`, `setattribute-ui.ts`, `move-ui.ts`"]
-        HELPER["Voice member helper<br/>`retieveChatMembers.ts`"]
-        SERVICE["`players.service.ts`"]
-        TEAMS["`teams.ts`"]
-        HISTORY["`sortHistory.ts`"]
-        SEED["`players.ts`"]
-        TEXT["Localization<br/>`src/localization/**`"]
+        UI["UI builders<br/>setrank-ui.ts, setattribute-ui.ts, move-ui.ts"]
+        HELPER["Voice member helper<br/>retieveChatMembers.ts"]
+        SERVICE["players.service.ts"]
+        TEAMS["teams.ts"]
+        HISTORY["sortHistory.ts"]
+        SEED["players.ts"]
+        TEXT["Localization<br/>src/localization/**"]
     end
 
     subgraph Infra["Infrastructure"]
-        CFG["`config.ts`"]
-        DB["`db.ts`"]
-        MYSQL[("MySQL `players` table")]
+        CFG["config.ts"]
+        DB["db.ts"]
+        MYSQL[("MySQL players table")]
     end
 
     M --> IDX
@@ -209,22 +209,22 @@ sequenceDiagram
     participant App as src/index.ts
     participant Discord as Discord Gateway
 
-    Compose->>DB: Start `mysql` service
+    Compose->>DB: Start mysql service
     Compose->>Start: Start bot container
     Start->>DB: Poll connection until reachable
-    Start->>Init: `npm run setup-db`
+    Start->>Init: npm run setup-db
     Init->>Config: Load DB config values
-    Init->>DB: `CREATE TABLE IF NOT EXISTS players (...)`
-    Init->>DB: `SELECT COUNT(*) AS total FROM players`
+    Init->>DB: CREATE TABLE IF NOT EXISTS players (...)
+    Init->>DB: SELECT COUNT(*) AS total FROM players
     alt Table is empty
-        Init->>DB: Insert seed rows from the configured `seeds/*.json` file
+        Init->>DB: Insert seed rows from the configured seeds/*.json file
     else Table already contains rows
         Init-->>Start: Skip seed step
     end
-    Start->>App: `npm run start:bot`
-    App->>Config: `assertRequiredConfig()`
-    App->>Discord: `client.login(TOKEN)`
-    Discord-->>App: `ready` event
+    Start->>App: npm run start:bot
+    App->>Config: assertRequiredConfig()
+    App->>Discord: client.login(TOKEN)
+    Discord-->>App: ready event
 ```
 
 ### Architectural significance
@@ -252,28 +252,28 @@ sequenceDiagram
     participant History as sortHistory.ts
     participant Teams as teams.ts
 
-    Discord->>App: `messageCreate("!sort")`
-    App->>Validator: `isValidCommandType(baseCommand)`
+    Discord->>App: messageCreate("!sort")
+    App->>Validator: isValidCommandType(baseCommand)
     Validator-->>App: valid command
-    App->>Factory: `createCommand(message.content, message)`
-    Factory-->>App: `SortRankedCommand`
-    App->>SortCmd: `execute()`
+    App->>Factory: createCommand(message.content, message)
+    Factory-->>App: SortRankedCommand
+    App->>SortCmd: execute()
     SortCmd->>SortCmd: Scan guild voice channels
     alt No connected members
         SortCmd-->>Discord: Send minimum-player / empty-state message
     else Members found
-        SortCmd->>Service: `getOrCreateAllPlayers(allVoiceMembers)`
-        Service->>DB: `SELECT * FROM players`
+        SortCmd->>Service: getOrCreateAllPlayers(allVoiceMembers)
+        Service->>DB: SELECT * FROM players
         loop For each missing member
-            Service->>DB: `INSERT` default player row
+            Service->>DB: INSERT default player row
         end
         DB-->>Service: Player rows
-        Service-->>SortCmd: `Record<string, PlayerInfo>`
+        Service-->>SortCmd: Record<string, PlayerInfo>
         SortCmd->>SortCmd: Resolve team count and voice-channel labels
-        SortCmd->>SortCmd: Build constrained balanced teams through `SortPlayersUseCase`
-        SortCmd->>History: `addSort({sessionId, teams, timestamp})`
-        History-->>SortCmd: `sortId`
-        SortCmd->>Teams: `setMatchSession({sessionId, createdAt, teams})`
+        SortCmd->>SortCmd: Build constrained balanced teams through SortPlayersUseCase
+        SortCmd->>History: addSort({sessionId, teams, timestamp})
+        History-->>SortCmd: sortId
+        SortCmd->>Teams: setMatchSession({sessionId, createdAt, teams})
         SortCmd-->>Discord: Send embed with teams and scores
     end
 ```
@@ -303,23 +303,23 @@ sequenceDiagram
     participant DB as MySQL players table
     participant Interaction as Discord interaction layer
 
-    Msg->>App: `messageCreate("!setrank")`
-    App->>Factory: `createCommand(...)`
-    Factory-->>App: `SetRankCommand`
-    App->>SetRank: `execute()`
-    SetRank->>UI: `generateSetRankComponents(0, authorId)`
-    UI->>DB: `SELECT * FROM players`
+    Msg->>App: messageCreate("!setrank")
+    App->>Factory: createCommand(...)
+    Factory-->>App: SetRankCommand
+    App->>SetRank: execute()
+    SetRank->>UI: generateSetRankComponents(0, authorId)
+    UI->>DB: SELECT * FROM players
     DB-->>UI: Player records
     UI-->>SetRank: Select menu + pagination buttons
     SetRank-->>Interaction: Send interactive message
 
-    Interaction->>App: `interactionCreate(select player)`
-    App->>App: Validate initiator from `customId`
+    Interaction->>App: interactionCreate(select player)
+    App->>App: Validate initiator from customId
     App-->>Interaction: Show modal for rank input
 
-    Interaction->>App: `interactionCreate(modal submit)`
+    Interaction->>App: interactionCreate(modal submit)
     App->>App: Parse, clamp, and round rank
-    App->>DB: `UPDATE players SET rank = ? WHERE id = ?`
+    App->>DB: UPDATE players SET rank = ? WHERE id = ?
     DB-->>App: Update OK
     App-->>Interaction: Reply with confirmation embed
 ```
@@ -346,24 +346,24 @@ sequenceDiagram
     participant Guild as Guild cache
     participant Voice as Target voice channels
 
-    Discord->>App: `messageCreate("!go")`
-    App->>Factory: `createCommand(...)`
-    Factory-->>App: `GoCommand`
-    App->>GoCmd: `execute()`
-    GoCmd->>Teams: `getMatchSession()`
+    Discord->>App: messageCreate("!go")
+    App->>Factory: createCommand(...)
+    Factory-->>App: GoCommand
+    App->>GoCmd: execute()
+    GoCmd->>Teams: getMatchSession()
     alt No active teams available
-        GoCmd-->>Discord: Send warning that `!sort` is required first
+        GoCmd-->>Discord: Send warning that !sort is required first
     else Teams exist
         loop For each active team
-            GoCmd->>GoCmd: Resolve configured team channel ID from `appConfig.channels.teamChannelIds`
+            GoCmd->>GoCmd: Resolve configured team channel ID from appConfig.channels.teamChannelIds
             GoCmd->>Guild: Resolve target voice channel and permissions
         end
         loop For each player ID in each team
             GoCmd->>Guild: Resolve member by username
-            GoCmd->>Voice: `member.voice.setChannel(targetChannel)`
+            GoCmd->>Voice: member.voice.setChannel(targetChannel)
         end
-        GoCmd->>Teams: `clearTeams()`
-        GoCmd->>History: `clearSortHistory()`
+        GoCmd->>Teams: clearTeams()
+        GoCmd->>History: clearSortHistory()
         GoCmd-->>Discord: Send completion message
     end
 ```
